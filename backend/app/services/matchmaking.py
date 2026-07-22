@@ -24,6 +24,7 @@ import redis.asyncio as aioredis
 from app.config import get_settings
 from app.services.game_service import GameSession, PlayerInfo, active_sessions
 from app.ws.manager import manager
+from app.ws import protocol as proto
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -62,8 +63,14 @@ class MatchmakingService:
     async def stop(self):
         if self._task:
             self._task.cancel()
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass
+            self._task = None
         if self._redis:
             await self._redis.aclose()
+            self._redis = None
 
     def _queue_key(self, time_control: str, mode: str) -> str:
         return f"queue:{time_control}:{mode}"
@@ -242,13 +249,16 @@ class MatchmakingService:
         )
         active_sessions[game_id] = session
 
-        # Send game_ready so clients reconnect to /ws/{game_id}
+        # Send game_ready with each seat's token so clients open /ws/{game_id}.
+        # The game itself starts only once both players connect to the game socket
+        # (in the WS router) — never here, where ws still points at lobby sockets.
         if white_ws:
-            await manager.send_json(white_ws, {"type": "game_ready", "game_id": game_id, "color": "white"})
+            await manager.send_json(
+                white_ws, proto.msg_game_ready(game_id, "white", white_player.seat_token))
         if black_ws:
-            await manager.send_json(black_ws, {"type": "game_ready", "game_id": game_id, "color": "black"})
+            await manager.send_json(
+                black_ws, proto.msg_game_ready(game_id, "black", black_player.seat_token))
 
-        await session.start()
         logger.info(f"Match created: {game_id} ({white_entry.display_name} vs {black_entry.display_name})")
 
 

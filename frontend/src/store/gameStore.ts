@@ -1,12 +1,17 @@
 import { create } from 'zustand';
 import { Chess } from 'chess.js';
-import type { Color, GameResult, GameReason } from '../types';
+import type { Color, GameResult, GameReason, MoveRecord } from '../types';
+
+// Local clock tick granularity (ms). Server time_update/game_update override.
+const CLOCK_TICK_MS = 200;
 
 interface GameState {
   // Connection
   socket: WebSocket | null;
   lobbySocket: WebSocket | null;
   gameId: string | null;
+  seatToken: string | null;   // secret used to (re)attach to our seat
+  token: string | null;       // access token used for this game (for reconnect)
 
   // Identity in this game
   myColor: Color | null;
@@ -16,9 +21,14 @@ interface GameState {
 
   // Board
   game: Chess;
+  startFen: string;
   fen: string;
   lastMoveUci: string | null;
   isCheck: boolean;
+
+  // Move history + review
+  moves: MoveRecord[];
+  selectedPly: number | null; // null = follow live; else index into `moves`
 
   // Clocks
   whiteTime: number;
@@ -38,14 +48,19 @@ interface GameState {
   blackEloDelta: number;
   pgn: string | null;
 
-  // Draw offer
+  // Draw offer / connection status
   drawOffered: boolean;
   opponentDisconnected: boolean;
   opponentGraceSeconds: number;
+  lastError: string | null;
+
+  // internal
+  _clockInterval: ReturnType<typeof setInterval> | null;
 
   // Actions
   setLobbySocket: (ws: WebSocket | null) => void;
   setSocket: (ws: WebSocket | null) => void;
+  setSeat: (gameId: string, seatToken: string, token: string | null) => void;
   startGame: (data: {
     gameId: string; color: Color; opponent: string; opponentElo: number;
     fen: string; timeControl: string; whiteTime: number; blackTime: number;
@@ -56,6 +71,8 @@ interface GameState {
   setQueued: (position: number) => void;
   setDrawOffered: (v: boolean) => void;
   setOpponentDisconnected: (v: boolean, grace?: number) => void;
+  setError: (detail: string | null) => void;
+  selectPly: (ply: number | null) => void;
   sendMove: (uci: string) => void;
   sendResign: () => void;
   sendDrawOffer: () => void;
@@ -65,18 +82,31 @@ interface GameState {
 
 const initialChess = new Chess();
 
+function uciToMove(uci: string) {
+  return {
+    from: uci.slice(0, 2),
+    to: uci.slice(2, 4),
+    promotion: uci.length > 4 ? uci[4] : undefined,
+  };
+}
+
 export const useGameStore = create<GameState>((set, get) => ({
   socket: null,
   lobbySocket: null,
   gameId: null,
+  seatToken: null,
+  token: null,
   myColor: null,
   myDisplayName: 'You',
   opponentName: '',
   opponentElo: 1200,
   game: initialChess,
+  startFen: initialChess.fen(),
   fen: initialChess.fen(),
   lastMoveUci: null,
   isCheck: false,
+  moves: [],
+  selectedPly: null,
   whiteTime: 600,
   blackTime: 600,
   turn: 'white',
@@ -92,40 +122,83 @@ export const useGameStore = create<GameState>((set, get) => ({
   drawOffered: false,
   opponentDisconnected: false,
   opponentGraceSeconds: 0,
+  lastError: null,
+  _clockInterval: null,
 
   setLobbySocket: (ws) => set({ lobbySocket: ws }),
   setSocket: (ws) => set({ socket: ws }),
+  setSeat: (gameId, seatToken, token) => set({ gameId, seatToken, token }),
 
   startGame: ({ gameId, color, opponent, opponentElo, fen, timeControl, whiteTime, blackTime }) => {
     const game = new Chess();
-    game.load(fen);
+    try { game.load(fen); } catch { /* keep default */ }
+
+    // (Re)start the smooth local clock ticker.
+    const existing = get()._clockInterval;
+    if (existing) clearInterval(existing);
+    const interval = setInterval(() => {
+      const s = get();
+      if (s.phase !== 'playing') return;
+      if (s.turn === 'white') {
+        set({ whiteTime: Math.max(0, s.whiteTime - CLOCK_TICK_MS / 1000) });
+      } else {
+        set({ blackTime: Math.max(0, s.blackTime - CLOCK_TICK_MS / 1000) });
+      }
+    }, CLOCK_TICK_MS);
+
     set({
       gameId, myColor: color, opponentName: opponent, opponentElo,
-      game, fen, timeControl, whiteTime, blackTime,
+      game, startFen: fen, fen, timeControl, whiteTime, blackTime,
       turn: 'white', phase: 'playing', result: null, reason: null,
       lastMoveUci: null, isCheck: false, drawOffered: false,
-      opponentDisconnected: false,
+      opponentDisconnected: false, moves: [], selectedPly: null,
+      lastError: null, _clockInterval: interval,
     });
   },
 
   applyUpdate: (fen, lastMove, wt, bt, turn, check) => {
+    const prev = get();
+    let moves = prev.moves;
+
+    // Derive SAN by replaying the move from the previous position. If the move
+    // does not chain (e.g. a reconnect snapshot), keep the existing history.
+    if (lastMove && lastMove.length >= 4) {
+      try {
+        const replay = new Chess(prev.fen);
+        const mv = replay.move(uciToMove(lastMove));
+        if (mv && replay.fen() === fen) {
+          moves = [...moves, { san: mv.san, uci: lastMove, fen }];
+        }
+      } catch { /* non-chaining update — leave history as-is */ }
+    }
+
     const game = new Chess();
-    game.load(fen);
-    set({ game, fen, lastMoveUci: lastMove, whiteTime: wt, blackTime: bt, turn, isCheck: check });
+    try { game.load(fen); } catch { /* ignore */ }
+
+    set({
+      game, fen, lastMoveUci: lastMove, whiteTime: wt, blackTime: bt,
+      turn, isCheck: check, moves, selectedPly: null,
+    });
   },
 
   updateTime: (wt, bt) => set({ whiteTime: wt, blackTime: bt }),
 
-  endGame: (result, reason, wt, bt, pgn, wDelta, bDelta) =>
+  endGame: (result, reason, wt, bt, pgn, wDelta, bDelta) => {
+    const existing = get()._clockInterval;
+    if (existing) clearInterval(existing);
     set({
       phase: 'over', result, reason, whiteTime: wt, blackTime: bt,
       pgn, whiteEloDelta: wDelta, blackEloDelta: bDelta,
-    }),
+      opponentDisconnected: false, _clockInterval: null,
+    });
+  },
 
   setQueued: (position) => set({ phase: 'queued', queuePosition: position }),
   setDrawOffered: (v) => set({ drawOffered: v }),
   setOpponentDisconnected: (v, grace = 0) =>
     set({ opponentDisconnected: v, opponentGraceSeconds: grace }),
+  setError: (detail) => set({ lastError: detail }),
+  selectPly: (ply) => set({ selectedPly: ply }),
 
   sendMove: (uci) => {
     const { socket } = get();
@@ -133,31 +206,31 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   sendResign: () => {
-    const { socket } = get();
-    socket?.send(JSON.stringify({ type: 'resign' }));
+    get().socket?.send(JSON.stringify({ type: 'resign' }));
   },
 
   sendDrawOffer: () => {
-    const { socket } = get();
-    socket?.send(JSON.stringify({ type: 'offer_draw' }));
+    get().socket?.send(JSON.stringify({ type: 'offer_draw' }));
   },
 
   sendDrawResponse: (accept) => {
-    const { socket } = get();
     const type = accept ? 'accept_draw' : 'decline_draw';
-    socket?.send(JSON.stringify({ type }));
+    get().socket?.send(JSON.stringify({ type }));
     set({ drawOffered: false });
   },
 
   reset: () => {
-    const { socket, lobbySocket } = get();
+    const { socket, lobbySocket, _clockInterval } = get();
     socket?.close();
     lobbySocket?.close();
+    if (_clockInterval) clearInterval(_clockInterval);
     const g = new Chess();
     set({
-      socket: null, lobbySocket: null, gameId: null, myColor: null,
-      game: g, fen: g.fen(), phase: 'idle', result: null, reason: null,
-      lastMoveUci: null, drawOffered: false, opponentDisconnected: false,
+      socket: null, lobbySocket: null, gameId: null, seatToken: null, token: null,
+      myColor: null, game: g, startFen: g.fen(), fen: g.fen(), phase: 'idle',
+      result: null, reason: null, lastMoveUci: null, moves: [], selectedPly: null,
+      drawOffered: false, opponentDisconnected: false, lastError: null,
+      _clockInterval: null,
     });
   },
 }));

@@ -76,6 +76,19 @@ export const useAuthStore = create<AuthState>()(
 
       clearError: () => set({ error: null }),
     }),
-    { name: 'auth-store', partialize: (s) => ({ user: s.user, isAuthenticated: s.isAuthenticated }) }
+    {
+      name: 'auth-store',
+      // Persist only the user profile — NOT `isAuthenticated`. On reload we start
+      // unauthenticated and let fetchMe() confirm the session, avoiding a flash of
+      // authenticated UI backed by a missing/expired token.
+      partialize: (s) => ({ user: s.user }),
+    }
   )
 );
+
+// The API client dispatches this when a refresh fails; drop the session cleanly.
+if (typeof window !== 'undefined') {
+  window.addEventListener('auth:logout', () => {
+    useAuthStore.getState().logout();
+  });
+}

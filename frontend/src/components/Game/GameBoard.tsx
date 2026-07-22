@@ -3,9 +3,17 @@ import { useGameStore } from '../../store/gameStore';
 import { useAuthStore } from '../../store/authStore';
 import { ChessgroundBoard } from './ChessgroundBoard';
 import { Chess } from 'chess.js';
-import { Flag, Handshake, Home, WifiOff } from 'lucide-react';
+import { Flag, Handshake, Home, WifiOff, Radio } from 'lucide-react';
 import { Clock } from './Clock';
 import { MoveList } from './MoveList';
+
+/** Which stored ELO applies to a given time control. */
+function ratingClass(tc: string): 'elo_bullet' | 'elo_blitz' | 'elo_rapid' {
+  const initial = parseInt(tc.split('+')[0] || '10', 10);
+  if (initial < 3) return 'elo_bullet';
+  if (initial < 10) return 'elo_blitz';
+  return 'elo_rapid';
+}
 
 interface GameBoardProps {
   onLeave: () => void;
@@ -32,39 +40,42 @@ const REASON_LABELS: Record<string, string> = {
 
 export function GameBoard({ onLeave }: GameBoardProps) {
   const {
-    game, fen, myColor, opponentName, opponentElo, whiteTime, blackTime,
+    fen, myColor, opponentName, opponentElo, whiteTime, blackTime,
     turn, phase, result, reason, drawOffered, opponentDisconnected,
-    opponentGraceSeconds, myDisplayName, lastMoveUci, isCheck,
-    whiteEloDelta, blackEloDelta,
+    opponentGraceSeconds, myDisplayName, lastMoveUci, isCheck, timeControl,
+    whiteEloDelta, blackEloDelta, moves, selectedPly, selectPly,
     sendMove, sendResign, sendDrawOffer, sendDrawResponse,
   } = useGameStore();
   const { user } = useAuthStore();
 
-  function onPieceDrop(source: string, target: string, piece: string) {
-    if (phase !== 'playing') return false;
-    const myTurn = (turn === 'white' && myColor === 'white') || (turn === 'black' && myColor === 'black');
+  // Position shown on the board: live, or a past ply when reviewing.
+  const reviewing = selectedPly !== null;
+  const shownFen = reviewing ? moves[selectedPly!]?.fen ?? fen : fen;
+  const shownLastMove = reviewing ? moves[selectedPly!]?.uci : (lastMoveUci || undefined);
+
+  const onPieceDrop = React.useCallback((source: string, target: string) => {
+    const store = useGameStore.getState();
+    if (store.phase !== 'playing' || store.selectedPly !== null) return false;
+    const myTurn =
+      (store.turn === 'white' && store.myColor === 'white') ||
+      (store.turn === 'black' && store.myColor === 'black');
     if (!myTurn) return false;
 
-    // Try the move locally to validate
-    const testGame = new Chess(fen);
+    // Validate locally before sending.
     let move;
     try {
-      move = testGame.move({ from: source, to: target, promotion: 'q' });
-    } catch (e) {
+      move = new Chess(store.fen).move({ from: source, to: target, promotion: 'q' });
+    } catch {
       return false;
     }
     if (!move) return false;
-
-    sendMove(move.from + move.to + (move.promotion || ''));
+    store.sendMove(move.from + move.to + (move.promotion || ''));
     return true;
-  }
+  }, []);
 
-  const myElo = myColor === 'white'
-    ? (user?.elo_rapid ?? 1200)
-    : (user?.elo_rapid ?? 1200);
-
+  const myEloField = ratingClass(timeControl);
+  const myElo = user ? (user[myEloField] ?? 1200) : 1200;
   const myDelta = myColor === 'white' ? whiteEloDelta : blackEloDelta;
-  const theirDelta = myColor === 'white' ? blackEloDelta : whiteEloDelta;
 
   const [boardWidth, setBoardWidth] = React.useState(() => Math.min(580, window.innerWidth - 32));
   React.useEffect(() => {
@@ -95,11 +106,14 @@ export function GameBoard({ onLeave }: GameBoardProps) {
           {/* Chessboard */}
           <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-white/5 aspect-square"
                style={{ width: boardWidth }}>
-            <ChessgroundBoard 
-              fen={fen} 
-              lastMoveUci={lastMoveUci || undefined}
+            <ChessgroundBoard
+              fen={shownFen}
+              lastMoveUci={shownLastMove}
               onPieceDrop={onPieceDrop}
               boardOrientation={myColor === 'black' ? 'black' : 'white'}
+              movableColor={myColor}
+              viewOnly={phase !== 'playing' || reviewing}
+              check={isCheck && !reviewing}
             />
             {/* Game over overlay */}
             {phase === 'over' && (
@@ -173,8 +187,18 @@ export function GameBoard({ onLeave }: GameBoardProps) {
 
           {/* Move list */}
           <div className="bg-slate-900/60 border border-white/5 rounded-2xl p-4 flex-1">
-            <p className="text-xs text-slate-400 uppercase tracking-wider mb-3">Moves</p>
-            <MoveList game={game} />
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs text-slate-400 uppercase tracking-wider">Moves</p>
+              {reviewing && (
+                <button
+                  onClick={() => selectPly(null)}
+                  className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer"
+                >
+                  <Radio size={12} /> Live
+                </button>
+              )}
+            </div>
+            <MoveList />
           </div>
 
           {/* Controls */}

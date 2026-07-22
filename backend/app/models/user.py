@@ -25,6 +25,11 @@ class User(Base):
     rd_blitz: Mapped[float] = mapped_column(Float, default=350.0)
     rd_bullet: Mapped[float] = mapped_column(Float, default=350.0)
 
+    # Glicko-2 volatility (σ) — must persist across games or it resets every game
+    vol_rapid: Mapped[float] = mapped_column(Float, default=0.06)
+    vol_blitz: Mapped[float] = mapped_column(Float, default=0.06)
+    vol_bullet: Mapped[float] = mapped_column(Float, default=0.06)
+
     # Stats
     wins: Mapped[int] = mapped_column(Integer, default=0)
     losses: Mapped[int] = mapped_column(Integer, default=0)

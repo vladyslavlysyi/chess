@@ -16,7 +16,6 @@ from app.database import get_db
 from app.services.auth_service import decode_access_token, get_user_by_id
 from app.services.matchmaking import matchmaking, register_ws, unregister_ws
 from app.services.game_service import GameSession, PlayerInfo, active_sessions
-from app.ws.manager import manager
 from app.ws import protocol as proto
 from app.services.bot_service import skill_level_from_elo
 
@@ -45,15 +44,19 @@ async def websocket_lobby(
     """
     await ws.accept()
 
-    # Resolve player identity from token
+    # Resolve player identity from token (active users only; else guest).
     user_id, display_name, elo = None, f"Guest_{uuid.uuid4().hex[:6]}", 1200
     if token:
         payload = decode_access_token(token)
         if payload:
             user_id_str = payload.get("sub")
             if user_id_str:
-                user = await get_user_by_id(db, uuid.UUID(user_id_str))
-                if user:
+                try:
+                    user_uuid = uuid.UUID(user_id_str)
+                except (ValueError, TypeError):
+                    user_uuid = None
+                user = await get_user_by_id(db, user_uuid) if user_uuid else None
+                if user and user.is_active:
                     user_id = user.id
                     display_name = user.username
                     elo = user.elo_rapid
@@ -119,12 +122,10 @@ async def websocket_lobby(
                 )
                 active_sessions[game_id] = session
 
-                await ws.send_text(json.dumps({
-                    "type": "game_ready",
-                    "game_id": game_id,
-                    "color": "white",
-                }))
-                await session.start()
+                # Hand the client its seat token; the game starts when it opens
+                # /ws/{game_id} (the bot seat needs no socket).
+                await ws.send_text(json.dumps(
+                    proto.msg_game_ready(game_id, "white", white.seat_token)))
                 break  # Lobby WS done — game WS (/ws/{game_id}) takes over
 
             elif msg_type == "cancel":
@@ -132,7 +133,7 @@ async def websocket_lobby(
                     await matchmaking.dequeue(ws_key, queued_tc, queued_mode)
                     queued_tc = None
                     queued_mode = None
-                    await ws.send_text(json.dumps({"type": "cancelled"}))
+                    await ws.send_text(json.dumps(proto.msg_cancelled()))
 
             elif msg_type == "ping":
                 await ws.send_text(json.dumps({"type": "pong"}))

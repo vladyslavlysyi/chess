@@ -2,14 +2,14 @@
 Auth router: /auth/register, /auth/login, /auth/refresh, /auth/me
 
 Security pattern:
-  - Access token is returned in JSON body (stored in memory by client).
-  - Refresh token is set as HttpOnly cookie (CSRF-safe) AND returned in body.
+  - Access + refresh tokens are returned in the JSON response body.
+  - The client is responsible for storing them (access token in memory,
+    refresh token in the most secure storage the platform allows).
 """
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status, Cookie
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional
 
 from app.database import get_db
 from app.schemas.auth import (
@@ -21,6 +21,16 @@ from app.services import auth_service
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login-form")
+
+
+def _parse_uuid(value: str | None) -> uuid.UUID | None:
+    """Parse a string into a UUID, returning None instead of raising."""
+    if not value:
+        return None
+    try:
+        return uuid.UUID(value)
+    except (ValueError, TypeError, AttributeError):
+        return None
 
 
 # ─── Dependency: Get Current User ─────────────────────────────────────────────
@@ -38,11 +48,11 @@ async def get_current_user(
     if payload is None:
         raise credentials_exception
 
-    user_id_str: str = payload.get("sub")
-    if user_id_str is None:
+    user_uuid = _parse_uuid(payload.get("sub"))
+    if user_uuid is None:
         raise credentials_exception
 
-    user = await auth_service.get_user_by_id(db, uuid.UUID(user_id_str))
+    user = await auth_service.get_user_by_id(db, user_uuid)
     if user is None or not user.is_active:
         raise credentials_exception
 
@@ -60,7 +70,10 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
     if await auth_service.get_user_by_email(db, body.email):
         raise HTTPException(400, "Email already registered")
 
-    user = await auth_service.create_user(db, body.username, body.email, body.password)
+    try:
+        user = await auth_service.create_user(db, body.username, body.email, body.password)
+    except auth_service.UserAlreadyExists:
+        raise HTTPException(400, "Username or email already registered")
     return TokenResponse(
         access_token=auth_service.create_access_token(user.id, user.username),
         refresh_token=auth_service.create_refresh_token(user.id),
@@ -101,10 +114,11 @@ async def login_form(
 async def refresh_token(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
     """Get a new access token using a valid refresh token."""
     user_id_str = auth_service.decode_refresh_token(body.refresh_token)
-    if not user_id_str:
+    user_uuid = _parse_uuid(user_id_str)
+    if user_uuid is None:
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
 
-    user = await auth_service.get_user_by_id(db, uuid.UUID(user_id_str))
+    user = await auth_service.get_user_by_id(db, user_uuid)
     if not user or not user.is_active:
         raise HTTPException(status_code=401, detail="User not found")
 

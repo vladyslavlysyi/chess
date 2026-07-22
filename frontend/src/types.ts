@@ -94,6 +94,14 @@ export interface WsMsgGameReady {
   type: 'game_ready';
   game_id: string;
   color: Color;
+  seat_token: string;
+}
+
+// A single played half-move, kept for the interactive move list / review.
+export interface MoveRecord {
+  san: string;
+  uci: string;
+  fen: string; // position AFTER this move
 }
 
 export type WsMessage =

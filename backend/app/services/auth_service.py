@@ -12,6 +12,7 @@ from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
@@ -21,6 +22,14 @@ settings = get_settings()
 
 # bcrypt context (auto-selects best available scheme)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# A pre-computed dummy hash used to keep login timing constant when the user
+# does not exist (mitigates username-enumeration via timing).
+_DUMMY_HASH = pwd_context.hash("dummy-password-for-constant-time-compare")
+
+
+class UserAlreadyExists(Exception):
+    """Raised when a username/email uniqueness constraint is violated."""
 
 ALGORITHM = settings.ALGORITHM
 SECRET_KEY = settings.SECRET_KEY
@@ -103,6 +112,9 @@ async def get_user_by_id(db: AsyncSession, user_id: uuid.UUID) -> Optional[User]
 async def authenticate_user(db: AsyncSession, username: str, password: str) -> Optional[User]:
     user = await get_user_by_username(db, username)
     if not user:
+        # Verify against a dummy hash so response time doesn't reveal whether
+        # the username exists.
+        verify_password(password, _DUMMY_HASH)
         return None
     if not verify_password(password, user.password_hash):
         return None
@@ -116,6 +128,11 @@ async def create_user(db: AsyncSession, username: str, email: str, password: str
         password_hash=hash_password(password),
     )
     db.add(user)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        # Concurrent registration won the race on username/email uniqueness.
+        await db.rollback()
+        raise UserAlreadyExists()
     await db.refresh(user)
     return user

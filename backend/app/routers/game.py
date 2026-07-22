@@ -46,8 +46,12 @@ async def get_my_game_history(
 
 
 @router.get("/{game_id}", response_model=GameDetail)
-async def get_game(game_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    """Get full details (including PGN) for a specific game."""
+async def get_game(
+    game_id: uuid.UUID,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get full details (including PGN) for a specific game (authenticated)."""
     result = await db.execute(select(Game).where(Game.id == game_id))
     game = result.scalar_one_or_none()
     if not game:

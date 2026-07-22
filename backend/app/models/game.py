@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import String, Integer, Boolean, DateTime, ForeignKey, Enum, func
+from sqlalchemy import String, Integer, Boolean, DateTime, ForeignKey, Enum, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 import enum
 from app.database import Base
@@ -58,7 +58,7 @@ class Game(Base):
     )
 
     # Full PGN string stored after game ends
-    pgn: Mapped[Optional[str]] = mapped_column(String(10000), nullable=True)
+    pgn: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     winner_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True

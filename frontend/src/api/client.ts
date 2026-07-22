@@ -13,27 +13,44 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Auto-refresh on 401
+// Single-flight refresh: concurrent 401s share ONE refresh request so a rotated
+// refresh token isn't spent by parallel calls (which would log the user out).
+let refreshPromise: Promise<string> | null = null;
+
+function clearTokens() {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+}
+
+async function doRefresh(): Promise<string> {
+  const refresh = localStorage.getItem('refresh_token');
+  if (!refresh) throw new Error('No refresh token');
+  const { data } = await axios.post<TokenResponse>(`${BASE_URL}/auth/refresh`, {
+    refresh_token: refresh,
+  });
+  localStorage.setItem('access_token', data.access_token);
+  localStorage.setItem('refresh_token', data.refresh_token);
+  return data.access_token;
+}
+
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const original = err.config;
-    if (err.response?.status === 401 && !original._retry) {
+    if (err.response?.status === 401 && original && !original._retry) {
       original._retry = true;
-      const refresh = localStorage.getItem('refresh_token');
-      if (refresh) {
-        try {
-          const { data } = await axios.post<TokenResponse>(`${BASE_URL}/auth/refresh`, {
-            refresh_token: refresh,
-          });
-          localStorage.setItem('access_token', data.access_token);
-          localStorage.setItem('refresh_token', data.refresh_token);
-          original.headers.Authorization = `Bearer ${data.access_token}`;
-          return api(original);
-        } catch {
-          localStorage.clear();
-          window.location.reload();
+      try {
+        if (!refreshPromise) {
+          refreshPromise = doRefresh().finally(() => { refreshPromise = null; });
         }
+        const accessToken = await refreshPromise;
+        original.headers = original.headers ?? {};
+        original.headers.Authorization = `Bearer ${accessToken}`;
+        return api(original);
+      } catch {
+        clearTokens();
+        // Let the auth store react to the missing session instead of a hard reload.
+        window.dispatchEvent(new Event('auth:logout'));
       }
     }
     return Promise.reject(err);

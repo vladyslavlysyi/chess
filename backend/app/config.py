@@ -1,5 +1,9 @@
 from pydantic_settings import BaseSettings
+from pydantic import model_validator
 from functools import lru_cache
+
+# Placeholder secret shipped in the repo — refuse to boot with it in production.
+_INSECURE_SECRET = "CHANGE_ME_IN_PRODUCTION_use_openssl_rand_hex_32"
 
 
 class Settings(BaseSettings):
@@ -29,6 +33,18 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+
+    @model_validator(mode="after")
+    def _validate_secret(self):
+        """Refuse to boot with the shipped placeholder secret or a too-short key."""
+        if self.SECRET_KEY == _INSECURE_SECRET:
+            raise ValueError(
+                "SECRET_KEY is still the insecure placeholder. "
+                "Generate one with `openssl rand -hex 32` and set it in .env."
+            )
+        if len(self.SECRET_KEY) < 16:
+            raise ValueError("SECRET_KEY must be at least 16 characters long.")
+        return self
 
 
 @lru_cache()

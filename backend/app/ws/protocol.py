@@ -31,6 +31,8 @@ class ServerMsgType(str, Enum):
     ERROR = "error"
     PONG = "pong"
     QUEUED = "queued"
+    GAME_READY = "game_ready"
+    CANCELLED = "cancelled"
 
 
 # ─── Message Builders ─────────────────────────────────────────────────────────
@@ -111,3 +113,17 @@ def msg_draw_declined() -> dict:
 
 def msg_queued(position: int) -> dict:
     return {"type": ServerMsgType.QUEUED, "position": position}
+
+
+def msg_game_ready(game_id: str, color: str, seat_token: str) -> dict:
+    """Tell a client to open /ws/{game_id} using seat_token to claim its seat."""
+    return {
+        "type": ServerMsgType.GAME_READY,
+        "game_id": game_id,
+        "color": color,
+        "seat_token": seat_token,
+    }
+
+
+def msg_cancelled() -> dict:
+    return {"type": ServerMsgType.CANCELLED}

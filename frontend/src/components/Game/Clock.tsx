@@ -1,19 +1,19 @@
-import React, { useEffect, useRef } from 'react';
-
 interface ClockProps {
   seconds: number;
   isActive: boolean;
 }
 
 function fmt(s: number): string {
-  const m = Math.floor(s / 60);
-  const sec = Math.floor(s % 60);
+  const clamped = Math.max(0, s);
+  const m = Math.floor(clamped / 60);
+  const sec = Math.floor(clamped % 60);
   return `${m}:${sec.toString().padStart(2, '0')}`;
 }
 
 export function Clock({ seconds, isActive }: ClockProps) {
-  const isLow = seconds < 30;
-  const isCritical = seconds < 10;
+  const safe = Math.max(0, seconds);
+  const isLow = safe < 30;
+  const isCritical = safe < 10;
 
   return (
     <div className={`font-mono text-2xl font-bold px-4 py-2 rounded-xl transition-all ${
