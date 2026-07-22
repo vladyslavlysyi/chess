@@ -231,13 +231,13 @@ class MatchmakingService:
             user_id=uuid.UUID(white_entry.user_id) if white_entry.user_id else None,
             display_name=white_entry.display_name,
             elo=white_entry.elo,
-            ws=white_ws,
+            ws=None,
         )
         black_player = PlayerInfo(
             user_id=uuid.UUID(black_entry.user_id) if black_entry.user_id else None,
             display_name=black_entry.display_name,
             elo=black_entry.elo,
-            ws=black_ws,
+            ws=None,
         )
 
         session = GameSession(
