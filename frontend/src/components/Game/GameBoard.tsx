@@ -164,7 +164,7 @@ export function GameBoard({ onLeave }: GameBoardProps) {
                   <button
                     id="game-over-back-btn"
                     onClick={onLeave}
-                    className="mt-6 px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 mx-auto text-white bg-blue-600 hover:bg-blue-500 shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] hover:-translate-y-1"
+                    className="mt-6 px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 mx-auto text-white bg-[#16A34A] hover:bg-[#15803D] shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] hover:shadow-[0_6px_20px_rgba(22,163,74,0.23)] hover:-translate-y-1"
                   >
                     <Home size={20} /> Back to Lobby
                   </button>
@@ -249,10 +249,11 @@ export function GameBoard({ onLeave }: GameBoardProps) {
 
           {/* Move list */}
           <div
-            className="rounded-2xl p-4 flex-1 flex flex-col min-h-0"
+            className="rounded-2xl p-4 flex-1 flex flex-col min-h-0 transition-all duration-300"
             style={{
               background: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
+              border: '2px solid rgba(22, 163, 74, 0.3)',
+              boxShadow: '0 0 15px rgba(22, 163, 74, 0.1) inset',
             }}
           >
             <div className="flex items-center justify-between mb-3">
@@ -323,7 +324,7 @@ export function GameBoard({ onLeave }: GameBoardProps) {
             <button
               id="lobby-return-btn"
               onClick={onLeave}
-              className="w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 mt-2 text-white bg-blue-600 hover:bg-blue-500 shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] hover:-translate-y-[2px]"
+              className="w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 mt-2 text-white bg-[#16A34A] hover:bg-[#15803D] shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] hover:shadow-[0_6px_20px_rgba(22,163,74,0.23)] hover:-translate-y-[2px]"
             >
               <Home size={20} aria-hidden="true" /> Back to Lobby
             </button>
