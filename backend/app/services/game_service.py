@@ -23,6 +23,7 @@ from typing import Optional
 
 from app.ws.manager import manager
 from app.ws import protocol as proto
+from app.services.bot_service import BotEngine
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +98,10 @@ class GameSession:
 
     started: bool = field(default=False, init=False)
     is_over: bool = field(default=False, init=False)
+
+    # Persistent Stockfish engine — created once at game start, closed at end.
+    # None for human-vs-human games.
+    bot_engine: Optional["BotEngine"] = field(default=None, init=False, repr=False)
 
     def __post_init__(self):
         initial, self.increment = TIME_CONTROLS.get(self.time_control, (600, 0))
@@ -375,6 +380,14 @@ class GameSession:
 
         self._schedule_cleanup()
 
+        # Shut down the persistent Stockfish process (if any).
+        if self.bot_engine is not None:
+            engine, self.bot_engine = self.bot_engine, None
+            try:
+                await asyncio.to_thread(engine.close)
+            except Exception:
+                logger.warning(f"Failed to close BotEngine for game {self.game_id}")
+
     def _export_pgn(self) -> str:
         buf = StringIO()
         exporter = chess.pgn.FileExporter(buf)
@@ -615,9 +628,23 @@ class GameSession:
         if self.black.ws and not self.black.is_bot:
             await manager.send_json(self.black.ws, start_msg_black)
 
+        # Initialise the bot engine in a thread so Stockfish startup
+        # (which spawns a subprocess) doesn't block the event loop.
+        if self.black.is_bot:
+            try:
+                self.bot_engine = await asyncio.to_thread(
+                    BotEngine, self.black.bot_level
+                )
+            except Exception:
+                logger.warning(
+                    f"BotEngine init failed for game {self.game_id}; "
+                    "will fall back to minimax."
+                )
+
         self._start_clock()
         logger.info(f"Game {self.game_id} started: "
                     f"{self.white.display_name} vs {self.black.display_name}")
+
 
 
 # ─── Active Sessions Registry ─────────────────────────────────────────────────

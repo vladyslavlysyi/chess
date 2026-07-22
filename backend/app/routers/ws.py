@@ -151,19 +151,33 @@ async def websocket_game(
 
 
 async def _trigger_bot_move(session):
-    """Ask the bot service for the next move and apply it."""
-    import asyncio
-    from app.services.bot_service import get_bot_move
+    """Ask the persistent BotEngine for the next move and apply it.
 
-    # Small delay so the bot feels more natural.
+    Uses session.bot_engine (a long-lived Stockfish process) so we avoid
+    spawning a new process on every move.  Falls back to get_bot_move()
+    (one-shot) if the engine was not initialised for any reason.
+    """
+    import asyncio
+
+    # Brief human-like delay before the bot "thinks".
     await asyncio.sleep(0.3)
     if session.is_over:
         return
 
-    move_uci = await asyncio.to_thread(
-        get_bot_move,
-        board=session.board.copy(),
-        skill_level=session.black.bot_level,
-    )
+    bot_engine = session.bot_engine
+
+    if bot_engine is not None:
+        # Use the persistent engine — board must be copied for thread safety.
+        board_copy = session.board.copy()
+        move_uci = await asyncio.to_thread(bot_engine.get_move, board_copy)
+    else:
+        # Fallback: one-shot engine (spawns and kills a Stockfish process).
+        from app.services.bot_service import get_bot_move
+        move_uci = await asyncio.to_thread(
+            get_bot_move,
+            board=session.board.copy(),
+            skill_level=session.black.bot_level,
+        )
+
     if move_uci and not session.is_over:
         await session.apply_move(move_uci, None, override_color="black")
