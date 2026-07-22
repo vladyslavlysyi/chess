@@ -67,7 +67,8 @@ export function ChessgroundBoard({
     if (!cg) return;
 
     const turnColor = turnColorOf(fen);
-    const myTurn = !viewOnly && movableColor !== null && turnColor === movableColor;
+    const canMove = !viewOnly && movableColor !== null;
+    const myTurn = canMove && turnColor === movableColor;
 
     let lastMove: Key[] | undefined;
     if (lastMoveUci && lastMoveUci.length >= 4) {
@@ -81,9 +82,14 @@ export function ChessgroundBoard({
       lastMove,
       check: check ? turnColor : undefined,
       viewOnly,
+      premovable: {
+        enabled: canMove,
+        showDests: true,
+        castle: true,
+      },
       movable: {
         free: false,
-        color: myTurn ? movableColor! : undefined,
+        color: canMove ? movableColor! : undefined,
         dests: myTurn ? calcDests(fen) : new Map(),
         events: {
           after: (orig: Key, dest: Key) => {
@@ -101,6 +107,13 @@ export function ChessgroundBoard({
       },
     };
     cg.set(config);
+
+    if (myTurn) {
+      setTimeout(() => {
+        // playPremove uses setTimeout so we don't dispatch during render
+        apiRef.current?.playPremove();
+      }, 0);
+    }
   }, [fen, lastMoveUci, boardOrientation, movableColor, viewOnly, check]);
 
   return (
