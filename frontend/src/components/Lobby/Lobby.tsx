@@ -84,10 +84,10 @@ export function Lobby({ onAuthRequest, onProfileRequest }: LobbyProps) {
       {/* Header */}
       <header className="p-6 border-b border-white/5 flex justify-between items-center bg-[#0E1223]/80 backdrop-blur-xl relative z-10">
         <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-br from-violet-600 to-blue-600 p-2.5 rounded-xl shadow-[0_0_20px_rgba(124,58,237,0.4)]">
-            <Swords className="text-white" size={24} />
+          <div className="bg-green-500/20 p-2 rounded-xl">
+            <Swords className="text-green-400" size={24} />
           </div>
-          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-400 via-blue-400 to-cyan-400 tracking-tight">
+          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 tracking-tight">
             NexusChess
           </h1>
         </div>
