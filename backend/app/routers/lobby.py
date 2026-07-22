@@ -188,13 +188,13 @@ async def websocket_lobby(
                     user_id=room.user_id,
                     display_name=room.display_name,
                     elo=room.elo,
-                    ws=host_ws
+                    ws=None
                 )
                 joiner_player = PlayerInfo(
                     user_id=user_id,
                     display_name=display_name,
                     elo=elo,
-                    ws=ws
+                    ws=None
                 )
                 
                 white = host_player if host_is_white else joiner_player
