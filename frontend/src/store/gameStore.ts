@@ -231,8 +231,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         moves.push({
           san: m.san,
           uci: m.from + m.to + (m.promotion || ''),
-          turn: m.color as Color,
-          fen: '...', // we don't strictly need accurate FEN for replay unless we use it
+          fen: m.after,
         });
       });
     }
