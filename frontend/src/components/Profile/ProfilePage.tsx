@@ -1,18 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
+import { useGameStore } from '../../store/gameStore';
 import { gamesApi } from '../../api/client';
-import { Trophy, TrendingUp, TrendingDown, Minus, ArrowLeft } from 'lucide-react';
+import { Trophy, TrendingUp, TrendingDown, Minus, ArrowLeft, Eye } from 'lucide-react';
 import type { GameSummary } from '../../types';
 
 interface ProfilePageProps {
   onBack: () => void;
+  onReviewRequested: () => void;
 }
 
-export function ProfilePage({ onBack }: ProfilePageProps) {
+export function ProfilePage({ onBack, onReviewRequested }: ProfilePageProps) {
   const { user } = useAuthStore();
+  const { loadReplay } = useGameStore();
   const [games, setGames] = useState<GameSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const handleReviewGame = async (gameId: string, myColor: 'white' | 'black') => {
+    try {
+      const { data } = await gamesApi.detail(gameId);
+      loadReplay(data, myColor);
+      onReviewRequested();
+    } catch (err) {
+      console.error('Failed to load game replay:', err);
+      alert('Could not load game replay.');
+    }
+  };
 
   useEffect(() => {
     gamesApi.history(20, 0)
@@ -129,7 +143,14 @@ export function ProfilePage({ onBack }: ProfilePageProps) {
                         {delta >= 0 ? '+' : ''}{delta}
                       </div>
                     )}
-                    <p className="text-xs text-slate-500">{new Date(g.created_at).toLocaleDateString()}</p>
+                    <p className="text-xs text-slate-500 w-24 text-right hidden sm:block">{new Date(g.created_at).toLocaleDateString()}</p>
+                    <button 
+                      onClick={() => handleReviewGame(g.id, isWhite ? 'white' : 'black')}
+                      className="p-2 ml-2 bg-white/5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors"
+                      title="Review Game"
+                    >
+                      <Eye size={16} />
+                    </button>
                   </div>
                 );
               })}

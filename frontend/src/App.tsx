@@ -39,7 +39,7 @@ function App() {
           case 'game':
             return <GameBoard onLeave={handleLeaveGame} />;
           case 'profile':
-            return <ProfilePage onBack={() => setView('lobby')} />;
+            return <ProfilePage onBack={() => setView('lobby')} onReviewRequested={() => setView('game')} />;
           default:
             return (
               <Lobby

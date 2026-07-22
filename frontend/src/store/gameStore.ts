@@ -36,7 +36,7 @@ interface GameState {
   turn: Color;
 
   // Status
-  phase: 'idle' | 'lobby' | 'queued' | 'playing' | 'over';
+  phase: 'idle' | 'lobby' | 'queued' | 'playing' | 'over' | 'review';
   queuePosition: number;
   timeControl: string;
   isRated: boolean;
@@ -77,6 +77,7 @@ interface GameState {
   sendResign: () => void;
   sendDrawOffer: () => void;
   sendDrawResponse: (accept: boolean) => void;
+  loadReplay: (gameDetail: any, myColor: Color) => void;
   reset: () => void;
 }
 
@@ -213,10 +214,46 @@ export const useGameStore = create<GameState>((set, get) => ({
     get().socket?.send(JSON.stringify({ type: 'offer_draw' }));
   },
 
-  sendDrawResponse: (accept) => {
+  sendDrawResponse: (accept: boolean) => {
     const type = accept ? 'accept_draw' : 'decline_draw';
     get().socket?.send(JSON.stringify({ type }));
     set({ drawOffered: false });
+  },
+
+  loadReplay: (gameDetail: any, myColor: Color) => {
+    // We assume gameDetail contains the full PGN in gameDetail.pgn
+    const chess = new Chess();
+    const moves: MoveRecord[] = [];
+    if (gameDetail.pgn) {
+      chess.loadPgn(gameDetail.pgn);
+      const history = chess.history({ verbose: true });
+      history.forEach((m) => {
+        moves.push({
+          san: m.san,
+          uci: m.from + m.to + (m.promotion || ''),
+          turn: m.color as Color,
+          fen: '...', // we don't strictly need accurate FEN for replay unless we use it
+        });
+      });
+    }
+
+    set({
+      phase: 'review',
+      myColor,
+      opponentName: myColor === 'white' ? gameDetail.black_display_name : gameDetail.white_display_name,
+      myDisplayName: myColor === 'white' ? gameDetail.white_display_name : gameDetail.black_display_name,
+      opponentElo: myColor === 'white' ? (gameDetail.black_elo_before || 0) : (gameDetail.white_elo_before || 0),
+      game: chess,
+      fen: chess.fen(),
+      moves,
+      selectedPly: null,
+      result: gameDetail.status,
+      pgn: gameDetail.pgn,
+      isRated: gameDetail.is_rated,
+      timeControl: gameDetail.time_control,
+      whiteTime: 0,
+      blackTime: 0,
+    });
   },
 
   reset: () => {

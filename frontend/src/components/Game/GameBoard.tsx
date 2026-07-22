@@ -3,7 +3,7 @@ import { useGameStore } from '../../store/gameStore';
 import { useAuthStore } from '../../store/authStore';
 import { ChessgroundBoard } from './ChessgroundBoard';
 import { Chess } from 'chess.js';
-import { Flag, Handshake, Home, WifiOff, Radio } from 'lucide-react';
+import { Flag, Handshake, Home, WifiOff, Radio, ChevronLeft, ChevronRight, SkipBack, SkipForward } from 'lucide-react';
 import { Clock } from './Clock';
 import { MoveList } from './MoveList';
 
@@ -275,6 +275,38 @@ export function GameBoard({ onLeave }: GameBoardProps) {
               )}
             </div>
             <MoveList />
+            {phase === 'review' && (
+              <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/10">
+                <button
+                  onClick={() => selectPly(0)}
+                  disabled={selectedPly === 0 || moves.length === 0}
+                  className="p-2 bg-white/5 hover:bg-white/10 rounded disabled:opacity-30 transition-colors"
+                >
+                  <SkipBack size={16} />
+                </button>
+                <button
+                  onClick={() => selectPly(selectedPly === null ? Math.max(0, moves.length - 2) : Math.max(0, selectedPly - 1))}
+                  disabled={selectedPly === 0 || moves.length === 0}
+                  className="p-2 bg-white/5 hover:bg-white/10 rounded disabled:opacity-30 transition-colors"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button
+                  onClick={() => selectPly(selectedPly === null || selectedPly >= moves.length - 1 ? null : selectedPly + 1)}
+                  disabled={selectedPly === null}
+                  className="p-2 bg-white/5 hover:bg-white/10 rounded disabled:opacity-30 transition-colors"
+                >
+                  <ChevronRight size={16} />
+                </button>
+                <button
+                  onClick={() => selectPly(null)}
+                  disabled={selectedPly === null}
+                  className="p-2 bg-white/5 hover:bg-white/10 rounded disabled:opacity-30 transition-colors"
+                >
+                  <SkipForward size={16} />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Game controls */}
@@ -320,7 +352,7 @@ export function GameBoard({ onLeave }: GameBoardProps) {
               </button>
             </div>
           )}
-          {phase === 'over' && (
+          {(phase === 'over' || phase === 'review') && (
             <button
               id="lobby-return-btn"
               onClick={onLeave}
@@ -373,7 +405,7 @@ function PlayerBar({ name, elo, time, isActive, boardWidth }: PlayerBarProps) {
           <p className="text-xs" style={{ color: 'var(--color-muted)' }}>{elo} ELO</p>
         </div>
       </div>
-      <Clock seconds={time} isActive={isActive} />
+      {time > 0 && <Clock seconds={time} isActive={isActive} />}
     </div>
   );
 }
