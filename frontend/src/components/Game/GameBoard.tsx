@@ -61,7 +61,6 @@ export function GameBoard({ onLeave }: GameBoardProps) {
       (store.turn === 'black' && store.myColor === 'black');
     if (!myTurn) return false;
 
-    // Validate locally before sending.
     let move;
     try {
       move = new Chess(store.fen).move({ from: source, to: target, promotion: 'q' });
@@ -77,6 +76,7 @@ export function GameBoard({ onLeave }: GameBoardProps) {
   const myElo = user ? (user[myEloField] ?? 1200) : 1200;
   const myDelta = myColor === 'white' ? whiteEloDelta : blackEloDelta;
 
+  // Responsive board sizing: fill available space up to 580px
   const [boardWidth, setBoardWidth] = React.useState(() => Math.min(580, window.innerWidth - 32));
   React.useEffect(() => {
     const handleResize = () => setBoardWidth(Math.min(580, window.innerWidth - 32));
@@ -84,28 +84,48 @@ export function GameBoard({ onLeave }: GameBoardProps) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const opponentTime = myColor === 'white' ? blackTime : whiteTime;
+  const myTime       = myColor === 'white' ? whiteTime : blackTime;
+  const opponentActive = turn !== myColor && phase === 'playing';
+  const myActive       = turn === myColor  && phase === 'playing';
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-green-600/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-slate-500/5 rounded-full blur-3xl" />
+    <div
+      className="min-h-screen flex items-center justify-center p-3 lg:p-6"
+      style={{ background: 'var(--color-bg)', color: 'var(--color-fg)' }}
+    >
+      {/* Ambient glow blobs */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        <div className="absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl"
+             style={{ background: 'var(--color-primary-faint)' }} />
+        <div className="absolute bottom-0 left-0 w-96 h-96 rounded-full blur-3xl"
+             style={{ background: 'rgba(148,163,184,0.04)' }} />
       </div>
 
-      <div className="relative z-10 w-full max-w-5xl flex flex-col lg:flex-row gap-4 items-start">
-        {/* Board column */}
-        <div className="w-full lg:w-auto flex flex-col items-center gap-3">
-          {/* Opponent info */}
+      {/* ── Chess.com style layout: board left, panel right ── */}
+      <div className="relative z-10 w-full max-w-5xl flex flex-col lg:flex-row gap-4 items-start justify-center">
+
+        {/* ── Left column: opponent bar + board + my bar ── */}
+        <div className="flex flex-col items-center gap-2">
+          {/* Opponent bar (top) */}
           <PlayerBar
             name={opponentName}
             elo={opponentElo}
-            time={myColor === 'white' ? blackTime : whiteTime}
-            isActive={turn !== myColor && phase === 'playing'}
-            isTop
+            time={opponentTime}
+            isActive={opponentActive}
+            boardWidth={boardWidth}
           />
 
           {/* Chessboard */}
-          <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-white/5 aspect-square"
-               style={{ width: boardWidth }}>
+          <div
+            className="relative rounded-xl overflow-hidden"
+            style={{
+              width: boardWidth,
+              height: boardWidth,
+              boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
+              border: '2px solid var(--color-border)',
+            }}
+          >
             <ChessgroundBoard
               fen={shownFen}
               lastMoveUci={shownLastMove}
@@ -115,24 +135,40 @@ export function GameBoard({ onLeave }: GameBoardProps) {
               viewOnly={phase !== 'playing' || reviewing}
               check={isCheck && !reviewing}
             />
-            {/* Game over overlay */}
+
+            {/* Game-over overlay */}
             {phase === 'over' && (
-              <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center">
-                <div className="bg-slate-900 border border-white/10 rounded-2xl p-8 text-center shadow-2xl mx-4">
+              <div
+                className="absolute inset-0 z-50 backdrop-blur-sm flex items-center justify-center"
+                style={{ background: 'rgba(2,6,23,0.75)' }}
+              >
+                <div
+                  className="border rounded-2xl p-8 text-center mx-4"
+                  style={{
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border-hover)',
+                    boxShadow: 'var(--shadow-md)',
+                  }}
+                >
                   <div className="text-4xl mb-2 font-bold">
                     {result ? RESULT_LABELS[result] : '—'}
                   </div>
-                  <p className="text-slate-400 mb-2">
+                  <p className="mb-2" style={{ color: 'var(--color-muted)' }}>
                     {reason ? REASON_LABELS[reason] : ''}
                   </p>
-                  {phase === 'over' && myColor && (
+                  {myColor && (
                     <div className={`text-lg font-bold mt-2 ${myDelta >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                       {myDelta >= 0 ? '+' : ''}{myDelta} ELO
                     </div>
                   )}
                   <button
+                    id="game-over-back-btn"
                     onClick={onLeave}
-                    className="mt-6 bg-green-500 hover:bg-green-400 px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 mx-auto shadow-lg shadow-green-500/20"
+                    className="mt-6 px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 mx-auto"
+                    style={{
+                      background: 'var(--color-primary)',
+                      boxShadow: 'var(--shadow-glow)',
+                    }}
                   >
                     <Home size={18} /> Back to Lobby
                   </button>
@@ -141,43 +177,73 @@ export function GameBoard({ onLeave }: GameBoardProps) {
             )}
           </div>
 
-          {/* My info */}
+          {/* My bar (bottom) */}
           <PlayerBar
             name={myDisplayName || user?.username || 'You'}
             elo={myElo}
-            time={myColor === 'white' ? whiteTime : blackTime}
-            isActive={turn === myColor && phase === 'playing'}
-            isTop={false}
+            time={myTime}
+            isActive={myActive}
+            boardWidth={boardWidth}
           />
         </div>
 
-        {/* Side panel */}
-        <div className="w-full lg:w-72 flex flex-col gap-3">
+        {/* ── Right panel: alerts + move list + controls ── */}
+        <div
+          className="w-full flex flex-col gap-3"
+          style={{ minWidth: '220px', maxWidth: '280px', alignSelf: 'stretch' }}
+        >
           {/* Opponent disconnected warning */}
           {opponentDisconnected && (
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 flex items-center gap-2">
-              <WifiOff size={16} className="text-amber-400 shrink-0" />
+            <div
+              className="rounded-xl px-4 py-3 flex items-center gap-2"
+              role="alert"
+              style={{
+                background: 'var(--color-warning-faint)',
+                border: '1px solid rgba(245,158,11,0.30)',
+              }}
+            >
+              <WifiOff size={16} className="text-amber-400 shrink-0" aria-hidden="true" />
               <div>
                 <p className="text-amber-400 text-sm font-medium">Opponent disconnected</p>
-                <p className="text-amber-300/60 text-xs">{opponentGraceSeconds}s grace period</p>
+                <p className="text-xs" style={{ color: 'rgba(245,158,11,0.6)' }}>
+                  {opponentGraceSeconds}s grace period
+                </p>
               </div>
             </div>
           )}
 
           {/* Draw offer */}
           {drawOffered && (
-            <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl px-4 py-3">
-              <p className="text-blue-300 text-sm font-medium mb-2 flex items-center gap-2"><Handshake size={16} /> Draw Offered</p>
+            <div
+              className="rounded-xl px-4 py-3"
+              role="alertdialog"
+              aria-label="Draw offer"
+              style={{
+                background: 'var(--color-info-faint)',
+                border: '1px solid rgba(59,130,246,0.30)',
+              }}
+            >
+              <p className="text-blue-300 text-sm font-medium mb-2 flex items-center gap-2">
+                <Handshake size={16} aria-hidden="true" /> Draw Offered
+              </p>
               <div className="flex gap-2">
                 <button
+                  id="draw-accept-btn"
                   onClick={() => sendDrawResponse(true)}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 py-1.5 rounded-lg text-sm font-medium transition-all"
+                  className="flex-1 py-1.5 rounded-lg text-sm font-medium transition-all"
+                  style={{ background: 'var(--color-primary)', color: '#fff' }}
                 >
                   Accept
                 </button>
                 <button
+                  id="draw-decline-btn"
                   onClick={() => sendDrawResponse(false)}
-                  className="flex-1 bg-red-600/30 hover:bg-red-600/50 border border-red-500/30 py-1.5 rounded-lg text-sm font-medium transition-all"
+                  className="flex-1 py-1.5 rounded-lg text-sm font-medium transition-all"
+                  style={{
+                    background: 'var(--color-destructive-faint)',
+                    border: '1px solid rgba(239,68,68,0.3)',
+                    color: '#fca5a5',
+                  }}
                 >
                   Decline
                 </button>
@@ -186,46 +252,89 @@ export function GameBoard({ onLeave }: GameBoardProps) {
           )}
 
           {/* Move list */}
-          <div className="bg-slate-900/60 border border-white/5 rounded-2xl p-4 flex-1">
+          <div
+            className="rounded-2xl p-4 flex-1 flex flex-col min-h-0"
+            style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs text-slate-400 uppercase tracking-wider">Moves</p>
+              <p
+                className="text-xs uppercase tracking-wider font-semibold"
+                style={{ color: 'var(--color-muted)' }}
+              >
+                Moves
+              </p>
               {reviewing && (
                 <button
+                  id="live-mode-btn"
                   onClick={() => selectPly(null)}
-                  className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer"
+                  className="flex items-center gap-1 text-xs transition-colors"
+                  style={{ color: 'var(--color-primary-light)' }}
                 >
-                  <Radio size={12} /> Live
+                  <Radio size={12} aria-hidden="true" /> Live
                 </button>
               )}
             </div>
             <MoveList />
           </div>
 
-          {/* Controls */}
+          {/* Game controls */}
           {phase === 'playing' && (
             <div className="flex gap-2">
               <button
+                id="draw-offer-btn"
                 onClick={sendDrawOffer}
                 title="Offer Draw"
-                className="flex-1 bg-black/20 hover:bg-black/40 border border-white/10 hover:border-white/20 py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-white text-sm"
+                className="flex-1 py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
+                style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid var(--color-border)',
+                  color: 'var(--color-muted)',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-fg)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-muted)')}
               >
-                <Handshake size={16} /> Draw
+                <Handshake size={16} aria-hidden="true" /> Draw
               </button>
               <button
+                id="resign-btn"
                 onClick={sendResign}
                 title="Resign"
-                className="flex-1 bg-black/20 hover:bg-red-900/30 border border-white/10 hover:border-red-500/40 py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-red-400 text-sm"
+                className="flex-1 py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
+                style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid var(--color-border)',
+                  color: 'var(--color-muted)',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'var(--color-destructive-faint)';
+                  e.currentTarget.style.borderColor = 'rgba(239,68,68,0.40)';
+                  e.currentTarget.style.color = '#fca5a5';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                  e.currentTarget.style.borderColor = 'var(--color-border)';
+                  e.currentTarget.style.color = 'var(--color-muted)';
+                }}
               >
-                <Flag size={16} /> Resign
+                <Flag size={16} aria-hidden="true" /> Resign
               </button>
             </div>
           )}
           {phase === 'over' && (
             <button
+              id="lobby-return-btn"
               onClick={onLeave}
-              className="w-full bg-green-500 hover:bg-green-400 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-500/20"
+              className="w-full py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2"
+              style={{
+                background: 'var(--color-primary)',
+                boxShadow: 'var(--shadow-glow)',
+                color: '#fff',
+              }}
             >
-              <Home size={18} /> Back to Lobby
+              <Home size={18} aria-hidden="true" /> Back to Lobby
             </button>
           )}
         </div>
@@ -241,25 +350,35 @@ interface PlayerBarProps {
   elo: number;
   time: number;
   isActive: boolean;
-  isTop: boolean;
+  boardWidth: number;
 }
 
-function PlayerBar({ name, elo, time, isActive, isTop }: PlayerBarProps) {
+function PlayerBar({ name, elo, time, isActive, boardWidth }: PlayerBarProps) {
   return (
-    <div className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${
-      isActive
-        ? 'bg-green-500/10 border-green-500/40'
-        : 'bg-slate-900/40 border-white/5'
-    }`} style={{ width: 'min(580px, calc(100vw - 2rem))' }}>
+    <div
+      className="flex items-center justify-between px-4 py-2.5 rounded-xl transition-all"
+      style={{
+        width: boardWidth,
+        background: isActive ? 'var(--color-primary-faint)' : 'var(--color-surface)',
+        border: `1px solid ${isActive ? 'rgba(21,128,61,0.40)' : 'var(--color-border)'}`,
+        boxShadow: isActive ? 'var(--shadow-glow)' : 'none',
+        transition: 'all var(--transition-md)',
+      }}
+    >
       <div className="flex items-center gap-3">
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-          isActive ? 'bg-green-500/20 text-green-300' : 'bg-white/5 text-slate-400'
-        }`}>
+        <div
+          className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
+          style={{
+            background: isActive ? 'var(--color-primary-faint)' : 'rgba(255,255,255,0.06)',
+            color: isActive ? 'var(--color-primary-light)' : 'var(--color-muted)',
+          }}
+          aria-hidden="true"
+        >
           {name[0]?.toUpperCase()}
         </div>
         <div>
           <p className="font-medium text-sm">{name}</p>
-          <p className="text-xs text-slate-400">{elo} ELO</p>
+          <p className="text-xs" style={{ color: 'var(--color-muted)' }}>{elo} ELO</p>
         </div>
       </div>
       <Clock seconds={time} isActive={isActive} />
