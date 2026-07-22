@@ -204,7 +204,8 @@ class GameSession:
 
     def _stop_clock(self):
         if self._clock_task:
-            self._clock_task.cancel()
+            if self._clock_task is not asyncio.current_task():
+                self._clock_task.cancel()
             self._clock_task = None
 
     # ─── Move Handling ────────────────────────────────────────────────────────
