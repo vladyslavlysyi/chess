@@ -164,13 +164,9 @@ export function GameBoard({ onLeave }: GameBoardProps) {
                   <button
                     id="game-over-back-btn"
                     onClick={onLeave}
-                    className="mt-6 px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 mx-auto"
-                    style={{
-                      background: 'var(--color-primary)',
-                      boxShadow: 'var(--shadow-glow)',
-                    }}
+                    className="mt-6 px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 mx-auto text-white bg-blue-600 hover:bg-blue-500 shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] hover:-translate-y-1"
                   >
-                    <Home size={18} /> Back to Lobby
+                    <Home size={20} /> Back to Lobby
                   </button>
                 </div>
               </div>
@@ -327,14 +323,9 @@ export function GameBoard({ onLeave }: GameBoardProps) {
             <button
               id="lobby-return-btn"
               onClick={onLeave}
-              className="w-full py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2"
-              style={{
-                background: 'var(--color-primary)',
-                boxShadow: 'var(--shadow-glow)',
-                color: '#fff',
-              }}
+              className="w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 mt-2 text-white bg-blue-600 hover:bg-blue-500 shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] hover:-translate-y-[2px]"
             >
-              <Home size={18} aria-hidden="true" /> Back to Lobby
+              <Home size={20} aria-hidden="true" /> Back to Lobby
             </button>
           )}
         </div>

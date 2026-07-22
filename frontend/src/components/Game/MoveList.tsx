@@ -41,8 +41,10 @@ export function MoveList() {
     return (
       <button
         onClick={() => selectPly(m.ply === moves.length - 1 ? null : m.ply)}
-        className={`flex-1 text-left px-1.5 py-0.5 rounded cursor-pointer transition-colors ${
-          isActive ? 'bg-emerald-500/25 text-white font-semibold' : 'text-slate-200 hover:bg-white/5'
+        className={`flex-1 text-left px-2 py-1 rounded cursor-pointer transition-all ${
+          isActive 
+            ? 'bg-[#16A34A] text-white font-bold shadow-[0_0_12px_rgba(22,163,74,0.5)] border border-[#22C55E]/50' 
+            : 'text-slate-300 hover:bg-white/10 hover:text-white'
         }`}
       >
         {m.san}
