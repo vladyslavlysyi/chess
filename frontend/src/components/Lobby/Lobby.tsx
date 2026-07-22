@@ -285,7 +285,7 @@ export function Lobby({ onAuthRequest, onProfileRequest }: LobbyProps) {
                   </p>
                   <button
                     onClick={handleCreatePrivate}
-                    className="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-2xl font-semibold text-lg shadow-xl shadow-blue-600/20 transition-all duration-200 flex items-center justify-center gap-3"
+                    className="w-full bg-green-500 hover:bg-green-400 py-4 rounded-2xl font-semibold text-lg shadow-xl shadow-green-500/20 transition-all duration-200 flex items-center justify-center gap-3"
                   >
                     <Users size={20} />
                     Create Room
