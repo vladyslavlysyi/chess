@@ -1,12 +1,4 @@
 import { useEffect, useState } from 'react';
-import '@fontsource/fira-sans/400.css';
-import '@fontsource/fira-sans/500.css';
-import '@fontsource/fira-sans/600.css';
-import '@fontsource/fira-sans/700.css';
-import '@fontsource/fira-code/400.css';
-import '@fontsource/fira-code/500.css';
-import '@fontsource/fira-code/600.css';
-import '@fontsource/fira-code/700.css';
 import { useAuthStore } from './store/authStore';
 import { useGameStore } from './store/gameStore';
 import { Lobby } from './components/Lobby/Lobby';
@@ -52,6 +44,7 @@ function App() {
             return (
               <Lobby
                 onAuthRequest={() => setView('auth')}
+                onProfileRequest={() => setView('profile')}
               />
             );
         }

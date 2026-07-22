@@ -32,16 +32,17 @@ export function ProfilePage({ onBack }: ProfilePageProps) {
   const winRate = total > 0 ? Math.round((user.wins / total) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e] text-slate-100 p-4">
+    <div className="min-h-screen text-slate-100 p-4" style={{ background: 'var(--color-bg)' }}>
       <div className="max-w-2xl mx-auto">
         <button onClick={onBack} className="flex items-center gap-2 text-slate-400 hover:text-white mb-6 transition-colors">
           <ArrowLeft size={18} /> Back
         </button>
 
         {/* Profile Card */}
-        <div className="bg-[#16213e]/80 border border-white/10 rounded-3xl p-6 mb-4">
+        <div className="border border-white/10 rounded-3xl p-6 mb-4" style={{ background: 'var(--color-surface)' }}>
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-2xl font-bold text-indigo-300">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold"
+                 style={{ background: 'var(--color-primary-faint)', color: 'var(--color-primary-light)' }}>
               {user.username[0]?.toUpperCase()}
             </div>
             <div>
@@ -54,15 +55,15 @@ export function ProfilePage({ onBack }: ProfilePageProps) {
           {/* ELO ratings */}
           <div className="grid grid-cols-3 gap-3 mb-6">
             <div className="bg-black/20 rounded-2xl p-4 text-center">
-              <p className="text-xs text-slate-400 mb-1">⚡ Rapid</p>
+              <p className="text-xs text-slate-400 mb-1">Rapid</p>
               <p className="text-2xl font-bold text-white">{user.elo_rapid}</p>
             </div>
             <div className="bg-black/20 rounded-2xl p-4 text-center">
-              <p className="text-xs text-slate-400 mb-1">🔥 Blitz</p>
+              <p className="text-xs text-slate-400 mb-1">Blitz</p>
               <p className="text-2xl font-bold text-white">{user.elo_blitz}</p>
             </div>
             <div className="bg-black/20 rounded-2xl p-4 text-center">
-              <p className="text-xs text-slate-400 mb-1">💨 Bullet</p>
+              <p className="text-xs text-slate-400 mb-1">Bullet</p>
               <p className="text-2xl font-bold text-white">{user.elo_bullet}</p>
             </div>
           </div>
@@ -81,15 +82,15 @@ export function ProfilePage({ onBack }: ProfilePageProps) {
               <p className="text-xs text-slate-400 mb-1">Draws</p>
               <p className="text-xl font-bold text-slate-300">{user.draws}</p>
             </div>
-            <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3 text-center">
-              <p className="text-xs text-indigo-400 mb-1">Win%</p>
-              <p className="text-xl font-bold text-indigo-300">{winRate}%</p>
+            <div className="rounded-xl p-3 text-center" style={{ background: 'var(--color-primary-faint)', border: '1px solid rgba(21,128,61,0.25)' }}>
+              <p className="text-xs mb-1" style={{ color: 'var(--color-primary-light)' }}>Win%</p>
+              <p className="text-xl font-bold" style={{ color: 'var(--color-accent, #22C55E)' }}>{winRate}%</p>
             </div>
           </div>
         </div>
 
         {/* Game History */}
-        <div className="bg-[#16213e]/80 border border-white/10 rounded-3xl p-6">
+        <div className="border border-white/10 rounded-3xl p-6" style={{ background: 'var(--color-surface)' }}>
           <h2 className="text-lg font-semibold mb-4">Recent Games</h2>
           {loading ? (
             <p className="text-slate-400 text-center py-8">Loading...</p>

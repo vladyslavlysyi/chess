@@ -29,10 +29,10 @@ export function AuthPage({ onBack, onSuccess }: AuthPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--color-bg)' }}>
       <div className="w-full max-w-md">
         {/* Card */}
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+        <div className="border border-white/10 rounded-3xl p-8 shadow-2xl" style={{ background: 'var(--color-surface)' }}>
           <div className="flex items-center gap-3 mb-8">
             <div className="bg-green-500/20 p-3 rounded-xl">
               <Swords className="text-green-400" size={24} />
@@ -50,16 +50,18 @@ export function AuthPage({ onBack, onSuccess }: AuthPageProps) {
             <button
               onClick={() => setMode('login')}
               className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                mode === 'login' ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : 'text-slate-400 hover:text-white'
+                mode === 'login' ? 'text-white shadow-lg' : 'text-slate-400 hover:text-white'
               }`}
+              style={{ background: mode === 'login' ? 'var(--color-primary)' : 'transparent', boxShadow: mode === 'login' ? 'var(--shadow-glow)' : 'none' }}
             >
               <LogIn size={14} className="inline mr-1" /> Sign In
             </button>
             <button
               onClick={() => setMode('register')}
               className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                mode === 'register' ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : 'text-slate-400 hover:text-white'
+                mode === 'register' ? 'text-white shadow-lg' : 'text-slate-400 hover:text-white'
               }`}
+              style={{ background: mode === 'register' ? 'var(--color-primary)' : 'transparent', boxShadow: mode === 'register' ? 'var(--shadow-glow)' : 'none' }}
             >
               <UserPlus size={14} className="inline mr-1" /> Register
             </button>
@@ -125,7 +127,8 @@ export function AuthPage({ onBack, onSuccess }: AuthPageProps) {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-green-500 hover:bg-green-400 disabled:opacity-50 py-3 px-6 rounded-xl font-semibold text-white shadow-lg shadow-green-500/20 transition-all duration-200"
+              className="w-full disabled:opacity-50 py-3 px-6 rounded-xl font-semibold text-white transition-all duration-200"
+              style={{ background: 'var(--color-primary)', boxShadow: 'var(--shadow-glow)' }}
             >
               {isLoading ? 'Loading...' : mode === 'login' ? 'Sign In' : 'Create Account'}
             </button>
