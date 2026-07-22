@@ -1,0 +1,261 @@
+import React from 'react';
+import { useGameStore } from '../../store/gameStore';
+import { useAuthStore } from '../../store/authStore';
+import { useLobbySocket } from '../../hooks/useSocket';
+import { Swords, User, LogIn, Bot, Trophy, Zap, Timer, Clock } from 'lucide-react';
+import type { TimeControl } from '../../types';
+
+interface LobbyProps {
+  onAuthRequest: () => void;
+}
+
+const TIME_CONTROLS: { label: string; value: TimeControl; type: string; icon: React.ReactNode }[] = [
+  { label: '1+0', value: '1+0', type: 'Bullet', icon: <Zap size={14} /> },
+  { label: '2+1', value: '2+1', type: 'Bullet', icon: <Zap size={14} /> },
+  { label: '3+0', value: '3+0', type: 'Blitz', icon: <Timer size={14} /> },
+  { label: '3+2', value: '3+2', type: 'Blitz', icon: <Timer size={14} /> },
+  { label: '5+0', value: '5+0', type: 'Blitz', icon: <Timer size={14} /> },
+  { label: '5+3', value: '5+3', type: 'Blitz', icon: <Timer size={14} /> },
+  { label: '10+0', value: '10+0', type: 'Rapid', icon: <Clock size={14} /> },
+  { label: '10+5', value: '10+5', type: 'Rapid', icon: <Clock size={14} /> },
+  { label: '15+10', value: '15+10', type: 'Rapid', icon: <Clock size={14} /> },
+];
+
+const BOT_LEVELS = [
+  { label: 'Beginner', elo: 600, color: 'text-green-400', bg: 'border-green-500/30 hover:border-green-400/50' },
+  { label: 'Easy', elo: 900, color: 'text-lime-400', bg: 'border-lime-500/30 hover:border-lime-400/50' },
+  { label: 'Medium', elo: 1200, color: 'text-yellow-400', bg: 'border-yellow-500/30 hover:border-yellow-400/50' },
+  { label: 'Hard', elo: 1600, color: 'text-orange-400', bg: 'border-orange-500/30 hover:border-orange-400/50' },
+  { label: 'Expert', elo: 2000, color: 'text-red-400', bg: 'border-red-500/30 hover:border-red-400/50' },
+  { label: 'Master', elo: 2500, color: 'text-purple-400', bg: 'border-purple-500/30 hover:border-purple-400/50' },
+];
+
+export function Lobby({ onAuthRequest }: LobbyProps) {
+  const [tab, setTab] = React.useState<'play' | 'bot'>('play');
+  const [selectedTc, setSelectedTc] = React.useState<TimeControl>('10+0');
+  const [isRated, setIsRated] = React.useState(false);
+  const { user, isAuthenticated, logout } = useAuthStore();
+  const { phase, lobbySocket, setLobbySocket } = useGameStore();
+  const { connect } = useLobbySocket();
+
+  const handleFindMatch = () => {
+    if (isRated && !isAuthenticated) {
+      onAuthRequest();
+      return;
+    }
+    const token = localStorage.getItem('access_token') || undefined;
+    const ws = connect(token);
+    ws.onopen = () => {
+      ws.send(JSON.stringify({
+        type: 'find_match',
+        time_control: selectedTc,
+        mode: isRated ? 'rated' : 'casual',
+      }));
+    };
+  };
+
+  const handleBotGame = (elo: number) => {
+    const token = localStorage.getItem('access_token') || undefined;
+    const ws = connect(token);
+    ws.onopen = () => {
+      ws.send(JSON.stringify({
+        type: 'play_bot',
+        time_control: selectedTc,
+        target_elo: elo,
+      }));
+    };
+  };
+
+  const handleCancel = () => {
+    lobbySocket?.send(JSON.stringify({ type: 'cancel' }));
+    useGameStore.getState().reset();
+  };
+
+  return (
+    <div className="min-h-screen bg-[#1a1a2e] text-slate-100 flex flex-col">
+      {/* Ambient backgrounds */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl" />
+      </div>
+
+      {/* Header */}
+      <header className="relative z-10 flex items-center justify-between px-6 py-4 border-b border-white/5">
+        <div className="flex items-center gap-2">
+          <Swords className="text-indigo-400" size={24} />
+          <span className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+            NexusChess
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          {isAuthenticated && user ? (
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-sm font-medium">{user.username}</p>
+                <p className="text-xs text-slate-400">⚡ {user.elo_rapid} Rapid</p>
+              </div>
+              <button
+                onClick={logout}
+                className="text-xs text-slate-400 hover:text-white border border-white/10 hover:border-white/30 px-3 py-1.5 rounded-lg transition-all"
+              >
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={onAuthRequest}
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-xl text-sm font-medium transition-all"
+            >
+              <LogIn size={15} /> Sign In
+            </button>
+          )}
+        </div>
+      </header>
+
+      {/* Main */}
+      <main className="relative z-10 flex-1 flex items-center justify-center p-4">
+        {phase === 'queued' ? (
+          <QueueScreen onCancel={handleCancel} />
+        ) : (
+          <div className="w-full max-w-2xl space-y-6">
+            <div className="text-center mb-8">
+              <h2 className="text-4xl font-bold mb-2 bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent">
+                Play Chess
+              </h2>
+              <p className="text-slate-400">Premium real-time experience</p>
+            </div>
+
+            {/* Mode tabs */}
+            <div className="flex bg-black/20 border border-white/5 rounded-2xl p-1.5 gap-1">
+              <button
+                onClick={() => setTab('play')}
+                className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                  tab === 'play'
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <User size={16} /> vs Player
+              </button>
+              <button
+                onClick={() => setTab('bot')}
+                className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                  tab === 'bot'
+                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Bot size={16} /> vs Bot
+              </button>
+            </div>
+
+            {/* Time Control Picker */}
+            <div>
+              <p className="text-xs text-slate-400 uppercase tracking-wider mb-3">Time Control</p>
+              <div className="grid grid-cols-3 gap-2">
+                {TIME_CONTROLS.map((tc) => (
+                  <button
+                    key={tc.value}
+                    onClick={() => setSelectedTc(tc.value)}
+                    className={`py-3 px-4 rounded-xl border text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                      selectedTc === tc.value
+                        ? 'bg-indigo-600/20 border-indigo-500 text-white'
+                        : 'bg-black/20 border-white/10 text-slate-400 hover:border-white/30 hover:text-white'
+                    }`}
+                  >
+                    {tc.icon}
+                    <span>{tc.label}</span>
+                    <span className={`text-xs ${selectedTc === tc.value ? 'text-indigo-300' : 'text-slate-500'}`}>
+                      {tc.type}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {tab === 'play' ? (
+              <div className="space-y-3">
+                {/* Rated toggle */}
+                <div className="flex items-center justify-between bg-black/20 border border-white/5 rounded-2xl px-5 py-4">
+                  <div className="flex items-center gap-2">
+                    <Trophy size={18} className="text-yellow-400" />
+                    <div>
+                      <p className="font-medium text-sm">Rated Game</p>
+                      <p className="text-xs text-slate-400">Affects your ELO rating</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsRated(!isRated)}
+                    className={`w-12 h-6 rounded-full transition-colors relative ${isRated ? 'bg-indigo-600' : 'bg-slate-700'}`}
+                  >
+                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${isRated ? 'left-7' : 'left-1'}`} />
+                  </button>
+                </div>
+
+                <button
+                  onClick={handleFindMatch}
+                  className="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-2xl font-semibold text-lg shadow-xl shadow-indigo-500/20 transition-all duration-200 flex items-center justify-center gap-3"
+                >
+                  <Swords size={20} />
+                  Find Opponent
+                </button>
+
+                {!isAuthenticated && (
+                  <button
+                    onClick={handleFindMatch}
+                    className="w-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 py-4 rounded-2xl font-medium transition-all flex items-center justify-center gap-2 text-slate-300"
+                  >
+                    <User size={18} /> Play as Guest
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div>
+                <p className="text-xs text-slate-400 uppercase tracking-wider mb-3">Bot Difficulty</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {BOT_LEVELS.map((bot) => (
+                    <button
+                      key={bot.elo}
+                      onClick={() => handleBotGame(bot.elo)}
+                      className={`bg-black/20 border ${bot.bg} py-4 px-5 rounded-2xl text-left transition-all group`}
+                    >
+                      <p className={`font-semibold ${bot.color}`}>{bot.label}</p>
+                      <p className="text-slate-400 text-sm">~{bot.elo} ELO</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+function QueueScreen({ onCancel }: { onCancel: () => void }) {
+  const { queuePosition } = useGameStore();
+
+  return (
+    <div className="text-center space-y-6">
+      <div className="relative w-24 h-24 mx-auto">
+        <div className="absolute inset-0 rounded-full border-4 border-indigo-500/20 animate-ping" />
+        <div className="absolute inset-2 rounded-full border-4 border-indigo-500/40 animate-pulse" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Swords className="text-indigo-400" size={36} />
+        </div>
+      </div>
+      <div>
+        <h2 className="text-2xl font-bold mb-1">Finding Opponent</h2>
+        <p className="text-slate-400">Queue position: #{queuePosition}</p>
+        <p className="text-slate-500 text-sm mt-1">Searching for players near your skill level...</p>
+      </div>
+      <button
+        onClick={onCancel}
+        className="border border-white/10 hover:border-red-500/50 text-slate-400 hover:text-red-400 px-6 py-2.5 rounded-xl transition-all text-sm"
+      >
+        Cancel Search
+      </button>
+    </div>
+  );
+}
