@@ -169,6 +169,23 @@ class MatchmakingService:
                 if abs(elo_a - elo_b) <= elo_window:
                     entry_b = await self._get_entry(ws_key_b)
                     if entry_b:
+                        # Verify both websockets are still connected before matching
+                        ws_a = _ws_registry.get(ws_key_a)
+                        ws_b = _ws_registry.get(ws_key_b)
+                        
+                        if not ws_a or not ws_b:
+                            if not ws_a:
+                                await self._redis.zrem(queue_key, ws_key_a)
+                                await self._redis.delete(self._entry_key(ws_key_a))
+                            if not ws_b:
+                                await self._redis.zrem(queue_key, ws_key_b)
+                                await self._redis.delete(self._entry_key(ws_key_b))
+                            # We break instead of continue to force re-evaluation of ws_key_a if ws_b was the only one dead
+                            if not ws_a:
+                                break
+                            else:
+                                continue
+
                         await self._create_match(entry_a, entry_b, time_control, mode)
                         return
 

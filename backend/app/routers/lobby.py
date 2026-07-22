@@ -9,10 +9,11 @@ import logging
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.auth_service import decode_access_token
+from app.database import get_db
+from app.services.auth_service import decode_access_token, get_user_by_id
 from app.services.matchmaking import matchmaking, register_ws, unregister_ws
 from app.services.game_service import GameSession, PlayerInfo, active_sessions
 from app.ws.manager import manager
@@ -27,6 +28,7 @@ logger = logging.getLogger(__name__)
 async def websocket_lobby(
     ws: WebSocket,
     token: Optional[str] = Query(default=None),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Lobby WebSocket for matchmaking and bot game creation.
@@ -48,14 +50,13 @@ async def websocket_lobby(
     if token:
         payload = decode_access_token(token)
         if payload:
-            # Simplified: in production, do a DB lookup here
             user_id_str = payload.get("sub")
-            display_name = payload.get("username", display_name)
             if user_id_str:
-                user_id = uuid.UUID(user_id_str)
-                # Note: elo comes from the DB; for now we use the stored value.
-                # The lobby router would need DB access (omitted for simplicity,
-                # add Depends(get_db) and a DB call here in a full impl).
+                user = await get_user_by_id(db, uuid.UUID(user_id_str))
+                if user:
+                    user_id = user.id
+                    display_name = user.username
+                    elo = user.elo_rapid
 
     ws_key = uuid.uuid4().hex
     register_ws(ws_key, ws)

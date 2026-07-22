@@ -6,10 +6,10 @@
 
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
-  background: #1a1a2e;
-  color: #f1f5f9;
+  background: #020617; /* Dark slate */
+  color: #F8FAFC;
 }
 
 /* Custom scrollbar */

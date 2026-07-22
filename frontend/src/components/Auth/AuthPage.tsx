@@ -29,13 +29,13 @@ export function AuthPage({ onBack, onSuccess }: AuthPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Card */}
-        <div className="bg-[#16213e]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+        <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
           <div className="flex items-center gap-3 mb-8">
-            <div className="bg-indigo-500/20 p-3 rounded-xl">
-              <Swords className="text-indigo-400" size={24} />
+            <div className="bg-green-500/20 p-3 rounded-xl">
+              <Swords className="text-green-400" size={24} />
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">NexusChess</h1>
@@ -50,7 +50,7 @@ export function AuthPage({ onBack, onSuccess }: AuthPageProps) {
             <button
               onClick={() => setMode('login')}
               className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                mode === 'login' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+                mode === 'login' ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : 'text-slate-400 hover:text-white'
               }`}
             >
               <LogIn size={14} className="inline mr-1" /> Sign In
@@ -58,7 +58,7 @@ export function AuthPage({ onBack, onSuccess }: AuthPageProps) {
             <button
               onClick={() => setMode('register')}
               className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                mode === 'register' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+                mode === 'register' ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : 'text-slate-400 hover:text-white'
               }`}
             >
               <UserPlus size={14} className="inline mr-1" /> Register
@@ -75,7 +75,7 @@ export function AuthPage({ onBack, onSuccess }: AuthPageProps) {
                 required
                 minLength={3}
                 autoFocus
-                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all"
                 placeholder="grandmaster99"
               />
             </div>
@@ -88,7 +88,7 @@ export function AuthPage({ onBack, onSuccess }: AuthPageProps) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                  className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all"
                   placeholder="you@example.com"
                 />
               </div>
@@ -103,7 +103,7 @@ export function AuthPage({ onBack, onSuccess }: AuthPageProps) {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={8}
-                  className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 pr-12 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                  className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 pr-12 text-white placeholder-slate-500 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all"
                   placeholder="••••••••"
                 />
                 <button
@@ -125,7 +125,7 @@ export function AuthPage({ onBack, onSuccess }: AuthPageProps) {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 py-3 px-6 rounded-xl font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all duration-200"
+              className="w-full bg-green-500 hover:bg-green-400 disabled:opacity-50 py-3 px-6 rounded-xl font-semibold text-white shadow-lg shadow-green-500/20 transition-all duration-200"
             >
               {isLoading ? 'Loading...' : mode === 'login' ? 'Sign In' : 'Create Account'}
             </button>

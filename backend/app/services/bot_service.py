@@ -77,6 +77,18 @@ class BotEngine:
         return move.uci() if move else None
 
 
+    def close(self):
+        """Terminate the Stockfish process to prevent zombie processes."""
+        if self._engine:
+            try:
+                # stockfish python module creates a subprocess. Popen object is in self._engine._stockfish
+                # or just use del which triggers __del__ and closes the process.
+                self._engine.__del__()
+            except Exception as e:
+                logger.error(f"Failed to close Stockfish: {e}")
+            self._engine = None
+
+
 # ─── Minimax Fallback ─────────────────────────────────────────────────────────
 
 PIECE_VALUES = {
@@ -147,7 +159,10 @@ def get_bot_move(board: chess.Board, skill_level: int = 10) -> Optional[str]:
     if not list(board.legal_moves):
         return None
     engine = BotEngine(skill_level=skill_level)
-    return engine.get_move(board)
+    try:
+        return engine.get_move(board)
+    finally:
+        engine.close()
 
 
 def skill_level_from_elo(target_elo: int) -> int:

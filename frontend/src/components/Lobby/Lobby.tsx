@@ -72,20 +72,16 @@ export function Lobby({ onAuthRequest }: LobbyProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e] text-slate-100 flex flex-col">
-      {/* Ambient backgrounds */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl" />
-      </div>
-
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       {/* Header */}
-      <header className="relative z-10 flex items-center justify-between px-6 py-4 border-b border-white/5">
-        <div className="flex items-center gap-2">
-          <Swords className="text-indigo-400" size={24} />
-          <span className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+      <header className="p-6 border-b border-white/5 flex justify-between items-center bg-slate-900/50 backdrop-blur-md">
+        <div className="flex items-center gap-3">
+          <div className="bg-green-500/20 p-2 rounded-xl">
+            <Swords className="text-green-400" size={24} />
+          </div>
+          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
             NexusChess
-          </span>
+          </h1>
         </div>
         <div className="flex items-center gap-3">
           {isAuthenticated && user ? (
@@ -104,7 +100,7 @@ export function Lobby({ onAuthRequest }: LobbyProps) {
           ) : (
             <button
               onClick={onAuthRequest}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-xl text-sm font-medium transition-all"
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-500 px-4 py-2 rounded-xl text-sm font-medium transition-all"
             >
               <LogIn size={15} /> Sign In
             </button>
@@ -112,45 +108,34 @@ export function Lobby({ onAuthRequest }: LobbyProps) {
         </div>
       </header>
 
-      {/* Main */}
-      <main className="relative z-10 flex-1 flex items-center justify-center p-4">
+      {/* Main Content */}
+      <main className="flex-1 flex items-center justify-center p-4">
         {phase === 'queued' ? (
           <QueueScreen onCancel={handleCancel} />
         ) : (
-          <div className="w-full max-w-2xl space-y-6">
-            <div className="text-center mb-8">
-              <h2 className="text-4xl font-bold mb-2 bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent">
-                Play Chess
-              </h2>
-              <p className="text-slate-400">Premium real-time experience</p>
-            </div>
-
-            {/* Mode tabs */}
-            <div className="flex bg-black/20 border border-white/5 rounded-2xl p-1.5 gap-1">
+          <div className="w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
+            {/* Tabs */}
+            <div className="flex bg-black/20 rounded-2xl p-1 mb-8">
               <button
                 onClick={() => setTab('play')}
-                className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-                  tab === 'play'
-                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
-                    : 'text-slate-400 hover:text-white'
+                className={`flex-1 py-3 rounded-xl font-medium transition-all flex justify-center items-center gap-2 ${
+                  tab === 'play' ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <User size={16} /> vs Player
+                <User size={18} /> Play Player
               </button>
               <button
                 onClick={() => setTab('bot')}
-                className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-                  tab === 'bot'
-                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
-                    : 'text-slate-400 hover:text-white'
+                className={`flex-1 py-3 rounded-xl font-medium transition-all flex justify-center items-center gap-2 ${
+                  tab === 'bot' ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <Bot size={16} /> vs Bot
+                <Bot size={18} /> Play Bot
               </button>
             </div>
 
             {/* Time Control Picker */}
-            <div>
+            <div className="mb-8">
               <p className="text-xs text-slate-400 uppercase tracking-wider mb-3">Time Control</p>
               <div className="grid grid-cols-3 gap-2">
                 {TIME_CONTROLS.map((tc) => (
@@ -159,13 +144,13 @@ export function Lobby({ onAuthRequest }: LobbyProps) {
                     onClick={() => setSelectedTc(tc.value)}
                     className={`py-3 px-4 rounded-xl border text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                       selectedTc === tc.value
-                        ? 'bg-indigo-600/20 border-indigo-500 text-white'
+                        ? 'bg-green-500/20 border-green-500 text-white'
                         : 'bg-black/20 border-white/10 text-slate-400 hover:border-white/30 hover:text-white'
                     }`}
                   >
                     {tc.icon}
                     <span>{tc.label}</span>
-                    <span className={`text-xs ${selectedTc === tc.value ? 'text-indigo-300' : 'text-slate-500'}`}>
+                    <span className={`text-xs ${selectedTc === tc.value ? 'text-green-300' : 'text-slate-500'}`}>
                       {tc.type}
                     </span>
                   </button>
@@ -186,7 +171,7 @@ export function Lobby({ onAuthRequest }: LobbyProps) {
                   </div>
                   <button
                     onClick={() => setIsRated(!isRated)}
-                    className={`w-12 h-6 rounded-full transition-colors relative ${isRated ? 'bg-indigo-600' : 'bg-slate-700'}`}
+                    className={`w-12 h-6 rounded-full transition-colors relative ${isRated ? 'bg-green-500' : 'bg-slate-700'}`}
                   >
                     <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${isRated ? 'left-7' : 'left-1'}`} />
                   </button>
@@ -194,7 +179,7 @@ export function Lobby({ onAuthRequest }: LobbyProps) {
 
                 <button
                   onClick={handleFindMatch}
-                  className="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-2xl font-semibold text-lg shadow-xl shadow-indigo-500/20 transition-all duration-200 flex items-center justify-center gap-3"
+                  className="w-full bg-green-500 hover:bg-green-400 py-4 rounded-2xl font-semibold text-lg shadow-xl shadow-green-500/20 transition-all duration-200 flex items-center justify-center gap-3"
                 >
                   <Swords size={20} />
                   Find Opponent
@@ -239,10 +224,10 @@ function QueueScreen({ onCancel }: { onCancel: () => void }) {
   return (
     <div className="text-center space-y-6">
       <div className="relative w-24 h-24 mx-auto">
-        <div className="absolute inset-0 rounded-full border-4 border-indigo-500/20 animate-ping" />
-        <div className="absolute inset-2 rounded-full border-4 border-indigo-500/40 animate-pulse" />
+        <div className="absolute inset-0 rounded-full border-4 border-green-500/20 animate-ping" />
+        <div className="absolute inset-2 rounded-full border-4 border-green-500/40 animate-pulse" />
         <div className="absolute inset-0 flex items-center justify-center">
-          <Swords className="text-indigo-400" size={36} />
+          <Swords className="text-green-400" size={36} />
         </div>
       </div>
       <div>

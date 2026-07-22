@@ -12,9 +12,9 @@ interface GameBoardProps {
 }
 
 const RESULT_LABELS: Record<string, string> = {
-  white: '⬜ White Wins',
-  black: '⬛ Black Wins',
-  draw: '🤝 Draw',
+  white: 'White Wins',
+  black: 'Black Wins',
+  draw: 'Draw',
 };
 
 const REASON_LABELS: Record<string, string> = {
@@ -74,10 +74,10 @@ export function GameBoard({ onLeave }: GameBoardProps) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e] text-slate-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-600/5 rounded-full blur-3xl" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-green-600/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-slate-500/5 rounded-full blur-3xl" />
       </div>
 
       <div className="relative z-10 w-full max-w-5xl flex flex-col lg:flex-row gap-4 items-start">
@@ -104,7 +104,7 @@ export function GameBoard({ onLeave }: GameBoardProps) {
             {/* Game over overlay */}
             {phase === 'over' && (
               <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center">
-                <div className="bg-[#16213e] border border-white/10 rounded-2xl p-8 text-center shadow-2xl mx-4">
+                <div className="bg-slate-900 border border-white/10 rounded-2xl p-8 text-center shadow-2xl mx-4">
                   <div className="text-4xl mb-2 font-bold">
                     {result ? RESULT_LABELS[result] : '—'}
                   </div>
@@ -118,7 +118,7 @@ export function GameBoard({ onLeave }: GameBoardProps) {
                   )}
                   <button
                     onClick={onLeave}
-                    className="mt-6 bg-indigo-600 hover:bg-indigo-500 px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 mx-auto"
+                    className="mt-6 bg-green-500 hover:bg-green-400 px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 mx-auto shadow-lg shadow-green-500/20"
                   >
                     <Home size={18} /> Back to Lobby
                   </button>
@@ -153,7 +153,7 @@ export function GameBoard({ onLeave }: GameBoardProps) {
           {/* Draw offer */}
           {drawOffered && (
             <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl px-4 py-3">
-              <p className="text-blue-300 text-sm font-medium mb-2">⚖️ Draw Offered</p>
+              <p className="text-blue-300 text-sm font-medium mb-2 flex items-center gap-2"><Handshake size={16} /> Draw Offered</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => sendDrawResponse(true)}
@@ -172,7 +172,7 @@ export function GameBoard({ onLeave }: GameBoardProps) {
           )}
 
           {/* Move list */}
-          <div className="bg-[#16213e]/60 border border-white/5 rounded-2xl p-4 flex-1">
+          <div className="bg-slate-900/60 border border-white/5 rounded-2xl p-4 flex-1">
             <p className="text-xs text-slate-400 uppercase tracking-wider mb-3">Moves</p>
             <MoveList game={game} />
           </div>
@@ -199,7 +199,7 @@ export function GameBoard({ onLeave }: GameBoardProps) {
           {phase === 'over' && (
             <button
               onClick={onLeave}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2"
+              className="w-full bg-green-500 hover:bg-green-400 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-500/20"
             >
               <Home size={18} /> Back to Lobby
             </button>
@@ -224,12 +224,12 @@ function PlayerBar({ name, elo, time, isActive, isTop }: PlayerBarProps) {
   return (
     <div className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${
       isActive
-        ? 'bg-indigo-600/10 border-indigo-500/40'
-        : 'bg-[#16213e]/40 border-white/5'
+        ? 'bg-green-500/10 border-green-500/40'
+        : 'bg-slate-900/40 border-white/5'
     }`} style={{ width: 'min(580px, calc(100vw - 2rem))' }}>
       <div className="flex items-center gap-3">
         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-          isActive ? 'bg-indigo-500/20 text-indigo-300' : 'bg-white/5 text-slate-400'
+          isActive ? 'bg-green-500/20 text-green-300' : 'bg-white/5 text-slate-400'
         }`}>
           {name[0]?.toUpperCase()}
         </div>
