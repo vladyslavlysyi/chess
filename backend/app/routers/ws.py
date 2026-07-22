@@ -57,6 +57,7 @@ async def websocket_game(
 ):
     """Main game WebSocket endpoint: /ws/{game_id}?seat_token=<...>&token=<jwt>"""
     user_id = await _resolve_user_id(token, db)
+    seat = None
 
     session = active_sessions.get(game_id)
     if not session:
@@ -143,11 +144,10 @@ async def websocket_game(
     except Exception as e:
         logger.exception(f"Unexpected error in WS handler for game {game_id}: {e}")
     finally:
-        # Always release the socket and, if this connection still owns its seat,
-        # kick off the reconnect grace / forfeit flow.
         manager.disconnect(ws)
-        if seat.ws is ws:
+        if seat and seat.ws is ws:
             await session.handle_disconnect(ws)
+
 
 
 async def _trigger_bot_move(session):
