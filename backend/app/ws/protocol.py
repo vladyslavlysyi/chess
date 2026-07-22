@@ -1,10 +1,14 @@
 """
 WebSocket Protocol: all message types that flow between server and client.
 
-Client → Server messages: "move", "resign", "offer_draw", "accept_draw", "reconnect"
+Client → Server messages: "move", "resign", "offer_draw", "accept_draw",
+                          "decline_draw", "ping"
 Server → Client messages: "game_start", "game_update", "game_over", "error",
                           "time_update", "opponent_disconnected", "opponent_reconnected",
                           "draw_offered", "draw_declined"
+
+Note: reconnection is handled automatically via seat_token at the WebSocket
+level — there is no "reconnect" client message.
 """
 from enum import Enum
 
@@ -15,7 +19,6 @@ class ClientMsgType(str, Enum):
     OFFER_DRAW = "offer_draw"
     ACCEPT_DRAW = "accept_draw"
     DECLINE_DRAW = "decline_draw"
-    RECONNECT = "reconnect"
     PING = "ping"
 
 

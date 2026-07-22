@@ -12,11 +12,18 @@ export function ProfilePage({ onBack }: ProfilePageProps) {
   const { user } = useAuthStore();
   const [games, setGames] = useState<GameSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    gamesApi.history(20, 0).then(({ data }) => {
-      setGames(data.games);
-    }).finally(() => setLoading(false));
+    gamesApi.history(20, 0)
+      .then(({ data }) => {
+        setGames(data.games);
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : 'Failed to load game history';
+        setError(msg);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   if (!user) return null;
@@ -86,6 +93,11 @@ export function ProfilePage({ onBack }: ProfilePageProps) {
           <h2 className="text-lg font-semibold mb-4">Recent Games</h2>
           {loading ? (
             <p className="text-slate-400 text-center py-8">Loading...</p>
+          ) : error ? (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-6 text-center">
+              <p className="text-red-400 font-medium text-sm mb-1">Could not load game history</p>
+              <p className="text-red-300/60 text-xs">{error}</p>
+            </div>
           ) : games.length === 0 ? (
             <p className="text-slate-400 text-center py-8">No games played yet</p>
           ) : (
