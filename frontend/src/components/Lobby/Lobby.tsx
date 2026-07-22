@@ -2,7 +2,7 @@ import React from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { useAuthStore } from '../../store/authStore';
 import { useLobbySocket } from '../../hooks/useSocket';
-import { Swords, User, LogIn, Bot, Trophy, Zap, Timer, Clock } from 'lucide-react';
+import { Swords, User, LogIn, Bot, Trophy, Zap, Timer, Clock, Users, Copy, Check } from 'lucide-react';
 import type { TimeControl } from '../../types';
 
 interface LobbyProps {
@@ -32,12 +32,26 @@ const BOT_LEVELS = [
 ];
 
 export function Lobby({ onAuthRequest, onProfileRequest }: LobbyProps) {
-  const [tab, setTab] = React.useState<'play' | 'bot'>('play');
+  const [tab, setTab] = React.useState<'play' | 'bot' | 'friend'>('play');
   const [selectedTc, setSelectedTc] = React.useState<TimeControl>('10+0');
   const [isRated, setIsRated] = React.useState(false);
+  const [copiedLink, setCopiedLink] = React.useState(false);
   const { user, isAuthenticated, logout } = useAuthStore();
-  const { phase, lobbySocket, setLobbySocket } = useGameStore();
+  const { phase, lobbySocket, privateRoomCode } = useGameStore();
   const { connect } = useLobbySocket();
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const room = params.get('room');
+    if (room) {
+      window.history.replaceState({}, document.title, '/');
+      const token = localStorage.getItem('access_token') || undefined;
+      const ws = connect(token);
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ type: 'join_private', room_code: room }));
+      };
+    }
+  }, [connect]);
 
   const handleFindMatch = () => {
     if (isRated && !isAuthenticated) {
@@ -65,6 +79,24 @@ export function Lobby({ onAuthRequest, onProfileRequest }: LobbyProps) {
         target_elo: elo,
       }));
     };
+  };
+
+  const handleCreatePrivate = () => {
+    const token = localStorage.getItem('access_token') || undefined;
+    const ws = connect(token);
+    ws.onopen = () => {
+      ws.send(JSON.stringify({
+        type: 'create_private',
+        time_control: selectedTc,
+      }));
+    };
+  };
+
+  const copyRoomLink = () => {
+    const url = `${window.location.origin}/?room=${privateRoomCode}`;
+    navigator.clipboard.writeText(url);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
   };
 
   const handleCancel = () => {
@@ -141,6 +173,14 @@ export function Lobby({ onAuthRequest, onProfileRequest }: LobbyProps) {
                 <User size={18} /> Play Player
               </button>
               <button
+                onClick={() => setTab('friend')}
+                className={`flex-1 py-3 rounded-xl font-medium transition-all flex justify-center items-center gap-2 ${
+                  tab === 'friend' ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Users size={18} /> Play Friend
+              </button>
+              <button
                 onClick={() => setTab('bot')}
                 className={`flex-1 py-3 rounded-xl font-medium transition-all flex justify-center items-center gap-2 ${
                   tab === 'bot' ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'
@@ -210,6 +250,48 @@ export function Lobby({ onAuthRequest, onProfileRequest }: LobbyProps) {
                   </button>
                 )}
               </div>
+            ) : tab === 'friend' ? (
+              privateRoomCode ? (
+                <div className="text-center space-y-4 py-4">
+                  <div className="mx-auto w-16 h-16 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center mb-2 animate-pulse">
+                    <Users size={32} />
+                  </div>
+                  <h3 className="text-xl font-bold">Room Created!</h3>
+                  <p className="text-slate-400 text-sm">Send this link to your friend. The game will start automatically when they join.</p>
+                  
+                  <div className="bg-black/40 border border-white/10 rounded-xl p-3 mt-4 flex items-center gap-3">
+                    <code className="text-sm text-green-300 flex-1 truncate text-left">
+                      {window.location.origin}/?room={privateRoomCode}
+                    </code>
+                    <button
+                      onClick={copyRoomLink}
+                      className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-white"
+                      title="Copy Link"
+                    >
+                      {copiedLink ? <Check size={16} className="text-green-400" /> : <Copy size={16} />}
+                    </button>
+                  </div>
+                  <button
+                    onClick={handleCancel}
+                    className="w-full mt-2 border border-white/10 hover:border-red-500/50 text-slate-400 hover:text-red-400 py-3 rounded-xl transition-all font-medium"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-400 text-center mb-4">
+                    Create a private room and invite a friend via a link. Unrated games only.
+                  </p>
+                  <button
+                    onClick={handleCreatePrivate}
+                    className="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-2xl font-semibold text-lg shadow-xl shadow-blue-600/20 transition-all duration-200 flex items-center justify-center gap-3"
+                  >
+                    <Users size={20} />
+                    Create Room
+                  </button>
+                </div>
+              )
             ) : (
               <div>
                 <p className="text-xs text-slate-400 uppercase tracking-wider mb-3">Bot Difficulty</p>

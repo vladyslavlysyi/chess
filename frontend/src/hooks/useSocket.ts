@@ -143,6 +143,8 @@ export function useLobbySocket() {
       const store = useGameStore.getState();
       if (msg.type === 'queued') {
         store.setQueued(msg.position);
+      } else if (msg.type === 'private_room_created') {
+        store.setPrivateRoomCode(msg.room_code);
       } else if (msg.type === 'cancelled') {
         store.reset();
       } else if (msg.type === 'error') {

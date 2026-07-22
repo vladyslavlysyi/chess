@@ -23,6 +23,23 @@ router = APIRouter(tags=["lobby"])
 logger = logging.getLogger(__name__)
 
 
+from dataclasses import dataclass
+import random
+import string
+import time
+
+@dataclass
+class PrivateRoom:
+    host_ws_key: str
+    user_id: Optional[uuid.UUID]
+    display_name: str
+    elo: int
+    time_control: str
+    created_at: float
+
+private_rooms: dict[str, PrivateRoom] = {}
+
+
 @router.websocket("/ws/lobby")
 async def websocket_lobby(
     ws: WebSocket,
@@ -36,10 +53,13 @@ async def websocket_lobby(
       {"type": "find_match", "time_control": "10+0", "mode": "rated"}
       {"type": "find_match", "time_control": "5+0", "mode": "casual"}
       {"type": "play_bot", "time_control": "10+0", "skill_level": 10}
+      {"type": "create_private", "time_control": "10+0"}
+      {"type": "join_private", "room_code": "..."}
       {"type": "cancel"}
     
     Server responds with:
       {"type": "queued", "position": 3}
+      {"type": "private_room_created", "room_code": "..."}
       {"type": "game_ready", "game_id": "...", "color": "white|black"}
     """
     await ws.accept()
@@ -65,6 +85,7 @@ async def websocket_lobby(
     register_ws(ws_key, ws)
     queued_tc = None
     queued_mode = None
+    created_room_code = None
 
     try:
         while True:
@@ -127,12 +148,85 @@ async def websocket_lobby(
                 await ws.send_text(json.dumps(
                     proto.msg_game_ready(game_id, "white", white.seat_token)))
                 break  # Lobby WS done — game WS (/ws/{game_id}) takes over
+                
+            elif msg_type == "create_private":
+                time_control = msg.get("time_control", "10+0")
+                room_code = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+                created_room_code = room_code
+                private_rooms[room_code] = PrivateRoom(
+                    host_ws_key=ws_key,
+                    user_id=user_id,
+                    display_name=display_name,
+                    elo=elo,
+                    time_control=time_control,
+                    created_at=time.time()
+                )
+                await ws.send_text(json.dumps({
+                    "type": "private_room_created",
+                    "room_code": room_code
+                }))
+                
+            elif msg_type == "join_private":
+                room_code = msg.get("room_code", "").upper()
+                room = private_rooms.pop(room_code, None)
+                if not room:
+                    await ws.send_text(json.dumps(proto.msg_error("Invalid or expired room code.")))
+                    continue
+                
+                from app.services.matchmaking import _ws_registry
+                host_ws = _ws_registry.get(room.host_ws_key)
+                if not host_ws:
+                    await ws.send_text(json.dumps(proto.msg_error("Host has left the room.")))
+                    continue
+
+                game_id = str(uuid.uuid4())
+                
+                # Randomize colors
+                host_is_white = random.choice([True, False])
+                
+                host_player = PlayerInfo(
+                    user_id=room.user_id,
+                    display_name=room.display_name,
+                    elo=room.elo,
+                    ws=host_ws
+                )
+                joiner_player = PlayerInfo(
+                    user_id=user_id,
+                    display_name=display_name,
+                    elo=elo,
+                    ws=ws
+                )
+                
+                white = host_player if host_is_white else joiner_player
+                black = joiner_player if host_is_white else host_player
+                
+                session = GameSession(
+                    game_id=game_id,
+                    white=white,
+                    black=black,
+                    time_control=room.time_control,
+                    is_rated=False,
+                )
+                active_sessions[game_id] = session
+                
+                # Send game_ready to both
+                await host_ws.send_text(json.dumps(
+                    proto.msg_game_ready(game_id, "white" if host_is_white else "black", host_player.seat_token)
+                ))
+                await ws.send_text(json.dumps(
+                    proto.msg_game_ready(game_id, "black" if host_is_white else "white", joiner_player.seat_token)
+                ))
+                break # leave lobby
 
             elif msg_type == "cancel":
                 if queued_tc and queued_mode:
                     await matchmaking.dequeue(ws_key, queued_tc, queued_mode)
                     queued_tc = None
                     queued_mode = None
+                    await ws.send_text(json.dumps(proto.msg_cancelled()))
+                elif created_room_code:
+                    private_rooms.pop(created_room_code, None)
+                    created_room_code = None
                     await ws.send_text(json.dumps(proto.msg_cancelled()))
 
             elif msg_type == "ping":
@@ -141,5 +235,7 @@ async def websocket_lobby(
     except WebSocketDisconnect:
         if queued_tc and queued_mode:
             await matchmaking.dequeue(ws_key, queued_tc, queued_mode)
+        if created_room_code:
+            private_rooms.pop(created_room_code, None)
     finally:
         unregister_ws(ws_key)

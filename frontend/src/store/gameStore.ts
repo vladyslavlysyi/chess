@@ -53,6 +53,7 @@ interface GameState {
   opponentDisconnected: boolean;
   opponentGraceSeconds: number;
   lastError: string | null;
+  privateRoomCode: string | null; // For private rooms
 
   // internal
   _clockInterval: ReturnType<typeof setInterval> | null;
@@ -61,6 +62,7 @@ interface GameState {
   setLobbySocket: (ws: WebSocket | null) => void;
   setSocket: (ws: WebSocket | null) => void;
   setSeat: (gameId: string, seatToken: string, token: string | null) => void;
+  setPrivateRoomCode: (code: string | null) => void;
   startGame: (data: {
     gameId: string; color: Color; opponent: string; opponentElo: number;
     fen: string; timeControl: string; whiteTime: number; blackTime: number;
@@ -124,11 +126,13 @@ export const useGameStore = create<GameState>((set, get) => ({
   opponentDisconnected: false,
   opponentGraceSeconds: 0,
   lastError: null,
+  privateRoomCode: null,
   _clockInterval: null,
 
   setLobbySocket: (ws) => set({ lobbySocket: ws }),
   setSocket: (ws) => set({ socket: ws }),
   setSeat: (gameId, seatToken, token) => set({ gameId, seatToken, token }),
+  setPrivateRoomCode: (code) => set({ privateRoomCode: code, phase: code ? 'lobby' : get().phase }),
 
   startGame: ({ gameId, color, opponent, opponentElo, fen, timeControl, whiteTime, blackTime }) => {
     const game = new Chess();
@@ -266,6 +270,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       myColor: null, game: g, startFen: g.fen(), fen: g.fen(), phase: 'idle',
       result: null, reason: null, lastMoveUci: null, moves: [], selectedPly: null,
       drawOffered: false, opponentDisconnected: false, lastError: null,
+      privateRoomCode: null,
       _clockInterval: null,
     });
   },
