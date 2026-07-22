@@ -1,0 +1,12 @@
+[Unit]
+Description=Chess Multiplayer Server
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/opt/chess_multiplayer
+ExecStart=/usr/bin/python3 /opt/chess_multiplayer/server.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
