@@ -7,6 +7,7 @@ import type { TimeControl } from '../../types';
 
 interface LobbyProps {
   onAuthRequest: () => void;
+  onProfileRequest: () => void;
 }
 
 const TIME_CONTROLS: { label: string; value: TimeControl; type: string; icon: React.ReactNode }[] = [
@@ -30,7 +31,7 @@ const BOT_LEVELS = [
   { label: 'Master', elo: 2500, color: 'text-purple-400', bg: 'border-purple-500/30 hover:border-purple-400/50' },
 ];
 
-export function Lobby({ onAuthRequest }: LobbyProps) {
+export function Lobby({ onAuthRequest, onProfileRequest }: LobbyProps) {
   const [tab, setTab] = React.useState<'play' | 'bot'>('play');
   const [selectedTc, setSelectedTc] = React.useState<TimeControl>('10+0');
   const [isRated, setIsRated] = React.useState(false);
@@ -72,27 +73,42 @@ export function Lobby({ onAuthRequest }: LobbyProps) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-[#020617] text-slate-100 flex flex-col relative overflow-hidden">
+      {/* Premium ambient background */}
+      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-violet-600/10 rounded-full blur-[120px]" />
+        <div className="absolute top-40 -left-40 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[100px]" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
+      </div>
+
       {/* Header */}
-      <header className="p-6 border-b border-white/5 flex justify-between items-center bg-slate-900/50 backdrop-blur-md">
+      <header className="p-6 border-b border-white/5 flex justify-between items-center bg-[#0E1223]/80 backdrop-blur-xl relative z-10">
         <div className="flex items-center gap-3">
-          <div className="bg-green-500/20 p-2 rounded-xl">
-            <Swords className="text-green-400" size={24} />
+          <div className="bg-gradient-to-br from-violet-600 to-blue-600 p-2.5 rounded-xl shadow-[0_0_20px_rgba(124,58,237,0.4)]">
+            <Swords className="text-white" size={24} />
           </div>
-          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-400 via-blue-400 to-cyan-400 tracking-tight">
             NexusChess
           </h1>
         </div>
         <div className="flex items-center gap-3">
           {isAuthenticated && user ? (
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <p className="text-sm font-medium">{user.username}</p>
-                <p className="text-xs text-slate-400">⚡ {user.elo_rapid} Rapid</p>
-              </div>
+            <div className="flex items-center gap-5">
+              <button
+                onClick={onProfileRequest}
+                className="flex flex-col items-end hover:opacity-80 transition-opacity"
+                title="View profile"
+              >
+                <p className="text-base font-bold text-slate-100 leading-tight">{user.username}</p>
+                <p className="text-xs text-slate-400 font-medium flex items-center gap-1 mt-0.5">
+                  <Zap size={12} className="text-amber-400 fill-amber-400" />
+                  {user.elo_rapid} Rapid
+                </p>
+              </button>
+              <div className="w-px h-8 bg-slate-700/50 hidden sm:block"></div>
               <button
                 onClick={logout}
-                className="text-xs text-slate-400 hover:text-white border border-white/10 hover:border-white/30 px-3 py-1.5 rounded-lg transition-all"
+                className="text-sm font-medium text-slate-300 hover:text-white bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 hover:border-slate-600 px-4 py-2 rounded-xl transition-all shadow-sm"
               >
                 Sign out
               </button>
@@ -100,9 +116,9 @@ export function Lobby({ onAuthRequest }: LobbyProps) {
           ) : (
             <button
               onClick={onAuthRequest}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-500 px-4 py-2 rounded-xl text-sm font-medium transition-all"
+              className="flex items-center gap-2 bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba(124,58,237,0.3)] hover:shadow-[0_0_25px_rgba(124,58,237,0.5)] hover:-translate-y-0.5"
             >
-              <LogIn size={15} /> Sign In
+              <LogIn size={16} /> Sign In
             </button>
           )}
         </div>
