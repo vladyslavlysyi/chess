@@ -153,4 +153,4 @@ async def _trigger_bot_move(session):
     )
     if move_uci and not session.is_over:
         # Apply bot move using the black player's (bot) perspective
-        await session.apply_move(move_uci, session.black.ws or object())
+        await session.apply_move(move_uci, None, override_color="black")

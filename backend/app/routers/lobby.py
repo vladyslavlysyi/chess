@@ -117,7 +117,6 @@ async def websocket_lobby(
                     is_rated=False,
                 )
                 active_sessions[game_id] = session
-                await manager.connect(ws, game_id)
 
                 await ws.send_text(json.dumps({
                     "type": "game_ready",

@@ -51,8 +51,8 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(game.router)
-app.include_router(ws_router.router)
 app.include_router(lobby_router.router)
+app.include_router(ws_router.router)
 
 
 # ─── Health Check ─────────────────────────────────────────────────────────────

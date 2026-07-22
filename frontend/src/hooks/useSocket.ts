@@ -2,7 +2,8 @@ import { useEffect, useCallback } from 'react';
 import { useGameStore } from '../store/gameStore';
 import type { WsMessage, Color } from '../types';
 
-const WS_BASE = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
+const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const WS_BASE = import.meta.env.PROD ? `${protocol}//${window.location.host}` : (import.meta.env.VITE_WS_URL || `${protocol}//${window.location.host}`);
 
 export function useLobbySocket() {
   const { setLobbySocket, setQueued, startGame, setSocket } = useGameStore();

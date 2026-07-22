@@ -4,9 +4,10 @@ import { LogIn, UserPlus, Eye, EyeOff, Swords } from 'lucide-react';
 
 interface AuthPageProps {
   onBack: () => void;
+  onSuccess?: () => void;
 }
 
-export function AuthPage({ onBack }: AuthPageProps) {
+export function AuthPage({ onBack, onSuccess }: AuthPageProps) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -23,6 +24,7 @@ export function AuthPage({ onBack }: AuthPageProps) {
       } else {
         await register(username, email, password);
       }
+      if (onSuccess) onSuccess();
     } catch { /* error shown from store */ }
   };
 

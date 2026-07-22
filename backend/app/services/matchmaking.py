@@ -225,11 +225,11 @@ class MatchmakingService:
         )
         active_sessions[game_id] = session
 
-        # Connect WS to the game room
+        # Send game_ready so clients reconnect to /ws/{game_id}
         if white_ws:
-            await manager.connect(white_ws, game_id)
+            await manager.send_json(white_ws, {"type": "game_ready", "game_id": game_id, "color": "white"})
         if black_ws:
-            await manager.connect(black_ws, game_id)
+            await manager.send_json(black_ws, {"type": "game_ready", "game_id": game_id, "color": "black"})
 
         await session.start()
         logger.info(f"Match created: {game_id} ({white_entry.display_name} vs {black_entry.display_name})")

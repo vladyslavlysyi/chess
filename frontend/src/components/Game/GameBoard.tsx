@@ -1,7 +1,7 @@
 import React from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { useAuthStore } from '../../store/authStore';
-import { Chessboard } from 'react-chessboard';
+import { ChessgroundBoard } from './ChessgroundBoard';
 import { Chess } from 'chess.js';
 import { Flag, Handshake, Home, WifiOff } from 'lucide-react';
 import { Clock } from './Clock';
@@ -40,17 +40,6 @@ export function GameBoard({ onLeave }: GameBoardProps) {
   } = useGameStore();
   const { user } = useAuthStore();
 
-  // Compute highlighted squares from last move
-  const lastMoveHighlight = React.useMemo(() => {
-    if (!lastMoveUci || lastMoveUci.length < 4) return {};
-    const from = lastMoveUci.slice(0, 2);
-    const to = lastMoveUci.slice(2, 4);
-    return {
-      [from]: { backgroundColor: 'rgba(255, 255, 100, 0.3)' },
-      [to]:   { backgroundColor: 'rgba(255, 255, 100, 0.4)' },
-    };
-  }, [lastMoveUci]);
-
   function onPieceDrop(source: string, target: string, piece: string) {
     if (phase !== 'playing') return false;
     const myTurn = (turn === 'white' && myColor === 'white') || (turn === 'black' && myColor === 'black');
@@ -58,7 +47,12 @@ export function GameBoard({ onLeave }: GameBoardProps) {
 
     // Try the move locally to validate
     const testGame = new Chess(fen);
-    const move = testGame.move({ from: source, to: target, promotion: 'q' });
+    let move;
+    try {
+      move = testGame.move({ from: source, to: target, promotion: 'q' });
+    } catch (e) {
+      return false;
+    }
     if (!move) return false;
 
     sendMove(move.from + move.to + (move.promotion || ''));
@@ -71,6 +65,13 @@ export function GameBoard({ onLeave }: GameBoardProps) {
 
   const myDelta = myColor === 'white' ? whiteEloDelta : blackEloDelta;
   const theirDelta = myColor === 'white' ? blackEloDelta : whiteEloDelta;
+
+  const [boardWidth, setBoardWidth] = React.useState(() => Math.min(580, window.innerWidth - 32));
+  React.useEffect(() => {
+    const handleResize = () => setBoardWidth(Math.min(580, window.innerWidth - 32));
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#1a1a2e] text-slate-100 flex items-center justify-center p-4">
@@ -92,17 +93,13 @@ export function GameBoard({ onLeave }: GameBoardProps) {
           />
 
           {/* Chessboard */}
-          <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-white/5"
-               style={{ width: 'min(580px, calc(100vw - 2rem))' }}>
-            <Chessboard
-              position={fen}
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-white/5 aspect-square"
+               style={{ width: boardWidth }}>
+            <ChessgroundBoard 
+              fen={fen} 
+              lastMoveUci={lastMoveUci || undefined}
               onPieceDrop={onPieceDrop}
               boardOrientation={myColor === 'black' ? 'black' : 'white'}
-              customSquareStyles={lastMoveHighlight}
-              animationDuration={150}
-              customDarkSquareStyle={{ backgroundColor: '#769656' }}
-              customLightSquareStyle={{ backgroundColor: '#eeeed2' }}
-              boardWidth={undefined}
             />
             {/* Game over overlay */}
             {phase === 'over' && (

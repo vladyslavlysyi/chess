@@ -6,7 +6,7 @@ RUN npm ci
 
 COPY . .
 # Set production API URL (overridden by build args)
-ARG VITE_API_URL=http://159.203.185.183
+ARG VITE_API_URL=http://159.203.185.183/api
 ARG VITE_WS_URL=ws://159.203.185.183
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_WS_URL=$VITE_WS_URL

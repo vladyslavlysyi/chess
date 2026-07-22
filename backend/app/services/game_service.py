@@ -164,20 +164,24 @@ class GameSession:
 
     # ─── Move Handling ────────────────────────────────────────────────────────
 
-    async def apply_move(self, uci: str, ws) -> bool:
+    async def apply_move(self, uci: str, ws, override_color: str = None) -> bool:
         """
         Validate and apply a move from the WebSocket connection.
         Returns True if the move was legal and applied.
         """
+        logger.info(f"Applying move {uci} override={override_color}")
         if self.is_over:
+            logger.info("Game is over")
             return False
 
-        color = self.get_ws_color(ws)
+        color = override_color or self.get_ws_color(ws)
+        logger.info(f"Resolved color: {color}")
         if color is None:
             return False
 
         # Ensure it's this player's turn
         expected_turn = "white" if self.board.turn == chess.WHITE else "black"
+        logger.info(f"Expected turn: {expected_turn}, Got color: {color}")
         if color != expected_turn:
             await manager.send_json(ws, proto.msg_error("Not your turn"))
             return False
@@ -190,9 +194,13 @@ class GameSession:
             return False
 
         if move not in self.board.legal_moves:
+            logger.info(f"Illegal move {uci}")
             await manager.send_json(ws, proto.msg_error("Illegal move"))
             return False
 
+        # Apply the move
+        self.board.push(move)
+        logger.info(f"Move applied successfully: {uci}")
         # Consume elapsed time from the player who just moved
         now = asyncio.get_event_loop().time()
         elapsed = now - self._last_move_time
@@ -201,8 +209,6 @@ class GameSession:
         else:
             self.black_time = max(0.0, self.black_time - elapsed) + self.increment
 
-        # Apply the move
-        self.board.push(move)
         self.pgn_node = self.pgn_node.add_main_variation(move)
 
         # Cancel draw offer on move

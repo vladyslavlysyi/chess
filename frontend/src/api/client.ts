@@ -1,7 +1,8 @@
 import axios from 'axios';
 import type { TokenResponse, User, GameSummary } from '../types';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Use relative path by default to route through Nginx in production
+const BASE_URL = import.meta.env.PROD ? '/api' : (import.meta.env.VITE_API_URL || '/api');
 
 const api = axios.create({ baseURL: BASE_URL });
 
