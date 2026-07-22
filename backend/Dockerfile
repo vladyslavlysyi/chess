@@ -20,5 +20,5 @@ USER appuser
 
 EXPOSE 8000
 
-# Use gunicorn with uvicorn workers in production
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+# Use single worker because active_sessions and websockets are stored in-memory.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
