@@ -419,31 +419,13 @@ export function GameBoard({ onLeave }: GameBoardProps) {
             </div>
           )}
           {(phase === 'over' || phase === 'review') && (
-            <div className="flex flex-col gap-2 mt-2">
-              <button
-                onClick={async () => {
-                  if (pgn) {
-                    setAnalysisProgress(1); // Show progress bar
-                    const result = await analyzeGame(pgn, (p) => setAnalysisProgress(p));
-                    setAnalysis(result);
-                    setAnalysisProgress(100);
-                    setTimeout(() => setAnalysisProgress(0), 1000);
-                  }
-                }}
-                disabled={analysisProgress > 0}
-                className="w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-white bg-blue-600 hover:bg-blue-500 shadow-md hover:-translate-y-[2px] disabled:opacity-50 disabled:hover:translate-y-0"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-                Analyze Game
-              </button>
-              <button
-                id="lobby-return-btn"
-                onClick={onLeave}
-                className="w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-white bg-[#16A34A] hover:bg-[#15803D] shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] hover:shadow-[0_6px_20px_rgba(22,163,74,0.23)] hover:-translate-y-[2px]"
-              >
-                <Home size={20} aria-hidden="true" /> Back to Lobby
-              </button>
-            </div>
+            <button
+              id="lobby-return-btn"
+              onClick={onLeave}
+              className="w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 mt-2 text-white bg-[#16A34A] hover:bg-[#15803D] shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] hover:shadow-[0_6px_20px_rgba(22,163,74,0.23)] hover:-translate-y-[2px]"
+            >
+              <Home size={20} aria-hidden="true" /> Back to Lobby
+            </button>
           )}
 
           {/* In-game chat */}
