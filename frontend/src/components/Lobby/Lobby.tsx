@@ -192,30 +192,30 @@ export function Lobby({ onAuthRequest, onProfileRequest, onLeaderboardRequest }:
         ) : (
           <div className="w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
             {/* Tabs */}
-            <div className="flex bg-black/20 rounded-2xl p-1 mb-8">
+            <div className="flex bg-black/20 rounded-2xl p-1.5 mb-8 gap-1">
               <button
                 onClick={() => setTab('play')}
-                className={`flex-1 py-3 rounded-xl font-medium transition-all flex justify-center items-center gap-2 ${
+                className={`flex-1 py-3 rounded-xl font-medium transition-all flex flex-col sm:flex-row justify-center items-center gap-1 sm:gap-2 text-sm ${
                   tab === 'play' ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <User size={18} /> Play Player
+                <User size={16} /> <span>Play Player</span>
               </button>
               <button
                 onClick={() => setTab('friend')}
-                className={`flex-1 py-3 rounded-xl font-medium transition-all flex justify-center items-center gap-2 ${
+                className={`flex-1 py-3 rounded-xl font-medium transition-all flex flex-col sm:flex-row justify-center items-center gap-1 sm:gap-2 text-sm ${
                   tab === 'friend' ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <Users size={18} /> Play Friend
+                <Users size={16} /> <span>Play Friend</span>
               </button>
               <button
                 onClick={() => setTab('bot')}
-                className={`flex-1 py-3 rounded-xl font-medium transition-all flex justify-center items-center gap-2 ${
+                className={`flex-1 py-3 rounded-xl font-medium transition-all flex flex-col sm:flex-row justify-center items-center gap-1 sm:gap-2 text-sm ${
                   tab === 'bot' ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <Bot size={18} /> Play Bot
+                <Bot size={16} /> <span>Play Bot</span>
               </button>
             </div>
 

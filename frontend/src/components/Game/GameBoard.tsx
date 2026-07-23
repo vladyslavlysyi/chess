@@ -136,7 +136,7 @@ export function GameBoard({ onLeave }: GameBoardProps) {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-3 lg:p-6"
+      className="min-h-screen flex items-start justify-center p-2 md:p-3 lg:p-6 overflow-y-auto"
       style={{ background: 'var(--color-bg)', color: 'var(--color-fg)' }}
     >
       {/* Ambient glow blobs */}
@@ -147,10 +147,10 @@ export function GameBoard({ onLeave }: GameBoardProps) {
              style={{ background: 'rgba(148,163,184,0.04)' }} />
       </div>
 
-      {/* ── Chess.com style layout: board top on mobile, side-by-side on desktop ── */}
-      <div className="relative z-10 w-full max-w-5xl flex flex-col md:flex-row gap-4 items-start justify-center">
+      {/* board top on mobile, side-by-side on desktop */}
+      <div className="relative z-10 w-full max-w-5xl flex flex-col md:flex-row gap-3 md:gap-4 items-center md:items-start justify-center py-2">
 
-        {/* ── Left column: opponent bar + board + my bar ── */}
+        {/* Left column: opponent bar + board + my bar */}
         <div className="flex flex-col items-center gap-2 w-full md:w-auto">
           {/* Opponent bar (top) */}
           <PlayerBar
@@ -163,12 +163,14 @@ export function GameBoard({ onLeave }: GameBoardProps) {
 
           {/* Middle: EvalBar + Chessboard */}
           <div className="flex">
-            {/* Engine Eval Bar */}
-            <EvalBar 
-              evaluation={evaluation} 
-              turn={turn} 
-              boardHeight={boardWidth} 
-            />
+            {/* Engine Eval Bar — hidden on small mobile to save space */}
+            <div className="hidden sm:block">
+              <EvalBar
+                evaluation={evaluation}
+                turn={turn}
+                boardHeight={boardWidth}
+              />
+            </div>
 
             {/* Chessboard */}
             <div
@@ -258,10 +260,10 @@ export function GameBoard({ onLeave }: GameBoardProps) {
           />
         </div>
 
-        {/* ── Right panel: alerts + move list + controls ── */}
+        {/* Right panel: full-width on mobile, fixed-width on desktop */}
         <div
-          className="w-full md:w-auto flex flex-col gap-3"
-          style={{ minWidth: '220px', maxWidth: '280px', alignSelf: 'stretch' }}
+          className="w-full flex flex-col gap-3"
+          style={{ minWidth: '220px', maxWidth: '320px' }}
         >
           {/* Opponent disconnected warning */}
           {opponentDisconnected && (
