@@ -39,6 +39,23 @@ export async function analyzeGame(pgn: string, onProgress: (progress: number) =>
   for (let i = 0; i < fens.length; i++) {
     const fen = fens[i];
     
+    const chess = new Chess(fen);
+    if (chess.isCheckmate()) {
+      plies.push({
+        evaluation: chess.turn() === 'w' ? -10000 : 10000,
+        bestMove: '',
+      });
+      onProgress(Math.round(((i + 1) / fens.length) * 100));
+      continue;
+    } else if (chess.isDraw() || chess.isStalemate() || chess.isInsufficientMaterial()) {
+      plies.push({
+        evaluation: 0,
+        bestMove: '',
+      });
+      onProgress(Math.round(((i + 1) / fens.length) * 100));
+      continue;
+    }
+
     // Evaluate position (depth 10 is fast enough for browser analysis ~0.1-0.2s per ply)
     let currentEval = 0;
     engine.setEvalCallback((val) => {
