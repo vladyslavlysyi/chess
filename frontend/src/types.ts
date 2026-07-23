@@ -113,7 +113,8 @@ export type WsMessage =
   | { type: 'draw_declined' }
   | { type: 'pong' }
   | { type: 'cancelled' }
-  | { type: 'private_room_created'; room_code: string };
+  | { type: 'private_room_created'; room_code: string }
+  | { type: 'chat'; sender: string; text: string };
 
 export type TimeControl =
   | '1+0' | '2+1' | '3+0' | '3+2' | '5+0' | '5+3'

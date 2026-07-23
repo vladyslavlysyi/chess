@@ -32,7 +32,7 @@ const BOT_LEVELS = [
   { label: 'Master', elo: 2500, color: 'text-purple-400', bg: 'border-purple-500/30 hover:border-purple-400/50' },
 ];
 
-export function Lobby({ onAuthRequest, onProfileRequest }: LobbyProps) {
+export function Lobby({ onAuthRequest, onProfileRequest, onLeaderboardRequest }: LobbyProps) {
   const [tab, setTab] = React.useState<'play' | 'bot' | 'friend'>('play');
   const [selectedTc, setSelectedTc] = React.useState<TimeControl>('10+0');
   const [isRated, setIsRated] = React.useState(false);
