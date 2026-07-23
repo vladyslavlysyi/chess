@@ -43,6 +43,7 @@ const REASON_LABELS: Record<string, string> = {
 };
 
 export function GameBoard({ onLeave }: GameBoardProps) {
+  const [showOverlay, setShowOverlay] = React.useState(true);
   const {
     fen, myColor, opponentName, opponentElo, whiteTime, blackTime,
     turn, phase, result, reason, drawOffered, opponentDisconnected,
@@ -197,7 +198,73 @@ export function GameBoard({ onLeave }: GameBoardProps) {
                 bestMove={(reviewing || phase === 'over') ? bestMove : null}
               />
 
-            {/* Overlay removed as requested by user */}
+            {/* Game-over overlay */}
+            {phase === 'over' && showOverlay && (
+              <div
+                className="absolute inset-0 z-50 backdrop-blur-sm flex items-center justify-center"
+                style={{ background: 'rgba(2,6,23,0.75)' }}
+              >
+                <div
+                  className="border rounded-2xl p-8 text-center mx-4 flex flex-col items-center"
+                  style={{
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border-hover)',
+                    boxShadow: 'var(--shadow-md)',
+                  }}
+                >
+                  <div className="text-4xl mb-2 font-bold">
+                    {result ? RESULT_LABELS[result] : '—'}
+                  </div>
+                  <p className="mb-4" style={{ color: 'var(--color-muted)' }}>
+                    {reason ? REASON_LABELS[reason] : ''}
+                  </p>
+                  
+                  {myColor && (
+                    <div className={`text-lg font-bold mb-6 ${myDelta >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {myDelta > 0 ? '+' : ''}{myDelta || 0} ELO
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-3 w-full">
+                    <button
+                      onClick={async () => {
+                        setShowOverlay(false);
+                        if (pgn) {
+                          setAnalysisProgress(1);
+                          try {
+                            const analysisResult = await analyzeGame(pgn, (p) => setAnalysisProgress(p));
+                            setAnalysis(analysisResult);
+                          } catch (e) {
+                            console.error('Analysis failed', e);
+                          } finally {
+                            setAnalysisProgress(100);
+                            setTimeout(() => setAnalysisProgress(0), 1000);
+                          }
+                        }
+                      }}
+                      disabled={analysisProgress > 0}
+                      className="w-full px-8 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-white bg-[#16A34A] hover:bg-[#15803D] shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] hover:-translate-y-1 disabled:opacity-50"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                      Analyze Game
+                    </button>
+                    <button
+                      id="game-over-back-btn"
+                      onClick={onLeave}
+                      className="w-full px-8 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-white bg-[#16A34A] hover:bg-[#15803D] shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] hover:-translate-y-1"
+                    >
+                      <Home size={18} /> Back to Lobby
+                    </button>
+                    <button 
+                      onClick={() => setShowOverlay(false)}
+                      className="w-full px-8 py-2 rounded-xl font-medium transition-all text-sm text-slate-400 hover:text-white hover:bg-white/5 mt-1"
+                    >
+                      Close and Review Board
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             </div>
           </div>
           {/* My bar (bottom) */}
