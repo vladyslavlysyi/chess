@@ -8,6 +8,7 @@ import type { TimeControl } from '../../types';
 interface LobbyProps {
   onAuthRequest: () => void;
   onProfileRequest: () => void;
+  onLeaderboardRequest: () => void;
 }
 
 const TIME_CONTROLS: { label: string; value: TimeControl; type: string; icon: React.ReactNode }[] = [
@@ -146,6 +147,14 @@ export function Lobby({ onAuthRequest, onProfileRequest }: LobbyProps) {
         <div className="flex items-center gap-3">
           {isAuthenticated && user ? (
             <div className="flex items-center gap-5">
+              <button
+                onClick={onLeaderboardRequest}
+                className="text-slate-400 hover:text-amber-400 transition-colors p-2 rounded-xl hover:bg-slate-800/50"
+                title="Leaderboard"
+              >
+                <Trophy size={20} />
+              </button>
+              <div className="w-px h-8 bg-slate-700/50 hidden sm:block"></div>
               <button
                 onClick={onProfileRequest}
                 className="flex flex-col items-end hover:opacity-80 transition-opacity"

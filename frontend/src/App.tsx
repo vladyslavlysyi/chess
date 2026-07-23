@@ -5,8 +5,9 @@ import { Lobby } from './components/Lobby/Lobby';
 import { GameBoard } from './components/Game/GameBoard';
 import { AuthPage } from './components/Auth/AuthPage';
 import { ProfilePage } from './components/Profile/ProfilePage';
+import { Leaderboard } from './components/Leaderboard/Leaderboard';
 
-type View = 'lobby' | 'auth' | 'game' | 'profile';
+type View = 'lobby' | 'auth' | 'game' | 'profile' | 'leaderboard';
 
 function App() {
   const [view, setView] = useState<View>('lobby');
@@ -40,11 +41,14 @@ function App() {
             return <GameBoard onLeave={handleLeaveGame} />;
           case 'profile':
             return <ProfilePage onBack={() => setView('lobby')} onReviewRequested={() => setView('game')} />;
+          case 'leaderboard':
+            return <Leaderboard onBack={() => setView('lobby')} />;
           default:
             return (
               <Lobby
                 onAuthRequest={() => setView('auth')}
                 onProfileRequest={() => setView('profile')}
+                onLeaderboardRequest={() => setView('leaderboard')}
               />
             );
         }

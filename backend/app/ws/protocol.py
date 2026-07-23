@@ -20,6 +20,7 @@ class ClientMsgType(str, Enum):
     ACCEPT_DRAW = "accept_draw"
     DECLINE_DRAW = "decline_draw"
     PING = "ping"
+    CHAT = "chat"
 
 
 class ServerMsgType(str, Enum):
@@ -36,6 +37,7 @@ class ServerMsgType(str, Enum):
     QUEUED = "queued"
     GAME_READY = "game_ready"
     CANCELLED = "cancelled"
+    CHAT = "chat"
 
 
 # ─── Message Builders ─────────────────────────────────────────────────────────
@@ -99,6 +101,14 @@ def msg_opponent_disconnected(grace_seconds: int) -> dict:
     return {
         "type": ServerMsgType.OPPONENT_DISCONNECTED,
         "grace_seconds": grace_seconds,
+    }
+
+
+def msg_chat(sender: str, text: str) -> dict:
+    return {
+        "type": ServerMsgType.CHAT,
+        "sender": sender,
+        "text": text,
     }
 
 

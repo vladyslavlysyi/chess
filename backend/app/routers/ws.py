@@ -21,7 +21,7 @@ from app.database import get_db
 from app.services.auth_service import decode_access_token, get_user_by_id
 from app.services.game_service import active_sessions
 from app.ws.manager import manager
-from app.ws.protocol import ClientMsgType, msg_error, msg_game_update
+from app.ws.protocol import ClientMsgType, msg_error, msg_game_update, msg_chat
 
 router = APIRouter(tags=["websocket"])
 logger = logging.getLogger(__name__)
@@ -135,6 +135,16 @@ async def websocket_game(
 
             elif msg_type == ClientMsgType.DECLINE_DRAW:
                 await session.handle_draw_response(ws, accepted=False)
+
+            elif msg_type == ClientMsgType.CHAT:
+                text = msg.get("text", "").strip()
+                if text and seat:
+                    # Broadcast chat to both players
+                    chat_msg = msg_chat(sender=seat.display_name, text=text)
+                    if session.white.ws:
+                        await manager.send_json(session.white.ws, chat_msg)
+                    if session.black.ws and not session.black.is_bot:
+                        await manager.send_json(session.black.ws, chat_msg)
 
             else:
                 await manager.send_json(ws, msg_error(f"Unknown message type: {msg_type}"))

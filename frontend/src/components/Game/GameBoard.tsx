@@ -6,6 +6,9 @@ import { Chess } from 'chess.js';
 import { Flag, Handshake, Home, WifiOff, Radio, ChevronLeft, ChevronRight, SkipBack, SkipForward } from 'lucide-react';
 import { Clock } from './Clock';
 import { MoveList } from './MoveList';
+import { Chat } from './Chat';
+import { EvalBar } from './EvalBar';
+import { Engine } from '../../lib/stockfish';
 
 /** Which stored ELO applies to a given time control. */
 function ratingClass(tc: string): 'elo_bullet' | 'elo_blitz' | 'elo_rapid' {
@@ -45,6 +48,7 @@ export function GameBoard({ onLeave }: GameBoardProps) {
     opponentGraceSeconds, myDisplayName, lastMoveUci, isCheck, timeControl,
     whiteEloDelta, blackEloDelta, moves, selectedPly, selectPly,
     sendMove, sendResign, sendDrawOffer, sendDrawResponse,
+    evaluation, setEvaluation, bestMove,
   } = useGameStore();
   const { user } = useAuthStore();
 
@@ -52,6 +56,34 @@ export function GameBoard({ onLeave }: GameBoardProps) {
   const reviewing = selectedPly !== null;
   const shownFen = reviewing ? moves[selectedPly!]?.fen ?? fen : fen;
   const shownLastMove = reviewing ? moves[selectedPly!]?.uci : (lastMoveUci || undefined);
+
+  // Engine evaluation effect
+  const engineRef = React.useRef<Engine | null>(null);
+
+  React.useEffect(() => {
+    // Initialize engine if not exists
+    if (!engineRef.current) {
+      const engine = new Engine();
+      engine.setEvalCallback((evalValue) => {
+        setEvaluation(evalValue);
+      });
+      // Best move logic is inside evaluatePosition resolving
+      engineRef.current = engine;
+    }
+
+    return () => {
+      engineRef.current?.quit();
+      engineRef.current = null;
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (engineRef.current && shownFen) {
+      engineRef.current.evaluatePosition(shownFen, 12).then((bestMove) => {
+        setEvaluation(useGameStore.getState().evaluation, bestMove);
+      });
+    }
+  }, [shownFen]);
 
   const onPieceDrop = React.useCallback((source: string, target: string) => {
     const store = useGameStore.getState();
@@ -116,25 +148,35 @@ export function GameBoard({ onLeave }: GameBoardProps) {
             boardWidth={boardWidth}
           />
 
-          {/* Chessboard */}
-          <div
-            className="relative rounded-xl overflow-hidden"
-            style={{
-              width: boardWidth,
-              height: boardWidth,
-              boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
-              border: '2px solid var(--color-border)',
-            }}
-          >
-            <ChessgroundBoard
-              fen={shownFen}
-              lastMoveUci={shownLastMove}
-              onPieceDrop={onPieceDrop}
-              boardOrientation={myColor === 'black' ? 'black' : 'white'}
-              movableColor={myColor}
-              viewOnly={phase !== 'playing' || reviewing}
-              check={isCheck && !reviewing}
+          {/* Middle: EvalBar + Chessboard */}
+          <div className="flex">
+            {/* Engine Eval Bar */}
+            <EvalBar 
+              evaluation={evaluation} 
+              turn={turn} 
+              boardHeight={boardWidth} 
             />
+
+            {/* Chessboard */}
+            <div
+              className="relative rounded-xl overflow-hidden ml-4"
+              style={{
+                width: boardWidth,
+                height: boardWidth,
+                boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
+                border: '2px solid var(--color-border)',
+              }}
+            >
+              <ChessgroundBoard
+                fen={shownFen}
+                lastMoveUci={shownLastMove}
+                onPieceDrop={onPieceDrop}
+                boardOrientation={myColor === 'black' ? 'black' : 'white'}
+                movableColor={myColor}
+                viewOnly={phase !== 'playing' || reviewing}
+                check={isCheck && !reviewing}
+                bestMove={(reviewing || phase === 'over') ? bestMove : null}
+              />
 
             {/* Game-over overlay */}
             {phase === 'over' && (
@@ -171,6 +213,7 @@ export function GameBoard({ onLeave }: GameBoardProps) {
                 </div>
               </div>
             )}
+            </div>
           </div>
 
           {/* My bar (bottom) */}
@@ -361,6 +404,9 @@ export function GameBoard({ onLeave }: GameBoardProps) {
               <Home size={20} aria-hidden="true" /> Back to Lobby
             </button>
           )}
+
+          {/* In-game chat */}
+          <Chat />
         </div>
       </div>
     </div>

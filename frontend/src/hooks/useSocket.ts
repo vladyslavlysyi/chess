@@ -68,6 +68,9 @@ function handleGameMessage(msg: WsMessage) {
     case 'error':
       store.setError(msg.detail);
       break;
+    case 'chat':
+      store.addChatMessage({ sender: msg.sender, text: msg.text });
+      break;
     // 'pong' — keepalive ack, nothing to do.
   }
 }

@@ -20,6 +20,8 @@ interface ChessgroundBoardProps {
   viewOnly?: boolean;
   /** Highlight the king in check. */
   check?: boolean;
+  /** Best move returned by the engine (e.g., 'e2e4'). */
+  bestMove?: string | null;
 }
 
 function turnColorOf(fen: string): 'white' | 'black' {
@@ -38,7 +40,7 @@ function calcDests(fen: string): Map<Key, Key[]> {
 }
 
 export function ChessgroundBoard({
-  fen, lastMoveUci, onPieceDrop, boardOrientation, movableColor, viewOnly = false, check = false,
+  fen, lastMoveUci, onPieceDrop, boardOrientation, movableColor, viewOnly = false, check = false, bestMove,
 }: ChessgroundBoardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const apiRef = useRef<Api | null>(null);
@@ -105,6 +107,15 @@ export function ChessgroundBoard({
           },
         },
       },
+      drawable: {
+        autoShapes: bestMove && bestMove.length >= 4 ? [
+          {
+            orig: bestMove.slice(0, 2) as Key,
+            dest: bestMove.slice(2, 4) as Key,
+            brush: 'paleBlue',
+          }
+        ] : [],
+      },
     };
     cg.set(config);
 
@@ -114,7 +125,7 @@ export function ChessgroundBoard({
         apiRef.current?.playPremove();
       }, 0);
     }
-  }, [fen, lastMoveUci, boardOrientation, movableColor, viewOnly, check]);
+  }, [fen, lastMoveUci, boardOrientation, movableColor, viewOnly, check, bestMove]);
 
   return (
     <div ref={ref} style={{ width: '100%', height: '100%', aspectRatio: '1 / 1' }} />

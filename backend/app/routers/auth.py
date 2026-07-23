@@ -128,6 +128,12 @@ async def refresh_token(body: RefreshRequest, db: AsyncSession = Depends(get_db)
     )
 
 
+@router.get("/leaderboard", response_model=list[UserPublic])
+async def get_leaderboard(mode: str = "rapid", limit: int = 50, db: AsyncSession = Depends(get_db)):
+    """Get the top players for a specific mode."""
+    return await auth_service.get_leaderboard(db, mode, limit)
+
+
 @router.get("/me", response_model=UserMe)
 async def get_me(current_user=Depends(get_current_user)):
     """Return the currently authenticated user's profile."""

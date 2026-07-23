@@ -64,6 +64,7 @@ export const authApi = {
     api.post<TokenResponse>('/auth/login', { username, password }),
   me: () => api.get<User>('/auth/me'),
   profile: (username: string) => api.get<User>(`/auth/users/${username}`),
+  leaderboard: (mode: string) => api.get<User[]>(`/auth/leaderboard?mode=${mode}`),
 };
 
 export const gamesApi = {

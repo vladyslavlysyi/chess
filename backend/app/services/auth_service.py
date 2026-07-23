@@ -98,6 +98,23 @@ async def get_user_by_username(db: AsyncSession, username: str) -> Optional[User
     result = await db.execute(select(User).where(User.username == username))
     return result.scalar_one_or_none()
 
+async def get_leaderboard(db: AsyncSession, mode: str = "rapid", limit: int = 50):
+    """Get the top players ordered by their ELO in the given mode."""
+    if mode == "blitz":
+        order_col = User.elo_blitz
+    elif mode == "bullet":
+        order_col = User.elo_bullet
+    else:
+        order_col = User.elo_rapid
+        
+    result = await db.execute(
+        select(User)
+        .where(User.is_active == True)
+        .order_by(order_col.desc())
+        .limit(limit)
+    )
+    return result.scalars().all()
+
 
 async def get_user_by_email(db: AsyncSession, email: str) -> Optional[User]:
     result = await db.execute(select(User).where(User.email == email))

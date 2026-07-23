@@ -58,6 +58,16 @@ interface GameState {
   // internal
   _clockInterval: ReturnType<typeof setInterval> | null;
 
+  // Chat
+  chatMessages: { sender: string; text: string }[];
+  sendChatMessage: (text: string) => void;
+  addChatMessage: (msg: { sender: string; text: string }) => void;
+
+  // Evaluation
+  evaluation: number | null;
+  bestMove: string | null;
+  setEvaluation: (evalValue: number | null, bestMove?: string | null) => void;
+
   // Actions
   setLobbySocket: (ws: WebSocket | null) => void;
   setSocket: (ws: WebSocket | null) => void;
@@ -100,8 +110,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   seatToken: null,
   token: null,
   myColor: null,
-  myDisplayName: 'You',
-  opponentName: '',
+  myDisplayName: 'Guest',
+  opponentName: 'Waiting...',
   opponentElo: 1200,
   game: initialChess,
   startFen: initialChess.fen(),
@@ -128,9 +138,13 @@ export const useGameStore = create<GameState>((set, get) => ({
   lastError: null,
   privateRoomCode: null,
   _clockInterval: null,
+  chatMessages: [],
+  evaluation: null,
+  bestMove: null,
 
   setLobbySocket: (ws) => set({ lobbySocket: ws }),
   setSocket: (ws) => set({ socket: ws }),
+  setEvaluation: (v, bestMove = null) => set({ evaluation: v, bestMove }),
   setSeat: (gameId, seatToken, token) => set({ gameId, seatToken, token }),
   setPrivateRoomCode: (code) => set({ privateRoomCode: code, phase: code ? 'lobby' : get().phase }),
 
@@ -157,7 +171,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       turn: 'white', phase: 'playing', result: null, reason: null,
       lastMoveUci: null, isCheck: false, drawOffered: false,
       opponentDisconnected: false, moves: [], selectedPly: null,
-      lastError: null, _clockInterval: interval,
+      lastError: null, _clockInterval: interval, chatMessages: [],
+      evaluation: null, bestMove: null,
     });
   },
 
@@ -210,6 +225,15 @@ export const useGameStore = create<GameState>((set, get) => ({
     socket?.send(JSON.stringify({ type: 'move', uci }));
   },
 
+  sendChatMessage: (text) => {
+    const { socket } = get();
+    socket?.send(JSON.stringify({ type: 'chat', text }));
+  },
+
+  addChatMessage: (msg) => {
+    set((state) => ({ chatMessages: [...state.chatMessages, msg] }));
+  },
+
   sendResign: () => {
     get().socket?.send(JSON.stringify({ type: 'resign' }));
   },
@@ -256,6 +280,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       timeControl: gameDetail.time_control,
       whiteTime: 0,
       blackTime: 0,
+      chatMessages: [],
+      evaluation: null,
+      bestMove: null,
     });
   },
 
@@ -272,6 +299,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       drawOffered: false, opponentDisconnected: false, lastError: null,
       privateRoomCode: null,
       _clockInterval: null,
+      chatMessages: [],
+      evaluation: null,
+      bestMove: null,
     });
   },
 }));
