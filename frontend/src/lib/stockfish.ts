@@ -34,9 +34,9 @@ export class Engine {
 
     // Parse best move
     if (msg.startsWith('bestmove')) {
-      const match = msg.match(/bestmove\s+([a-h][1-8][a-h][1-8][qrbn]?)/);
+      const match = msg.match(/bestmove\s+([a-h][1-8][a-h][1-8][qrbn]?|\(none\))/);
       if (match && this.resolveBestMove) {
-        this.resolveBestMove(match[1]);
+        this.resolveBestMove(match[1] === '(none)' ? '' : match[1]);
         this.resolveBestMove = null;
       }
     }
