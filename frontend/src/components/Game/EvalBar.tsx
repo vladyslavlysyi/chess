@@ -36,7 +36,7 @@ export function EvalBar({ evaluation, turn, boardHeight }: EvalBarProps) {
 
   return (
     <div 
-      className="w-6 rounded-md overflow-hidden bg-[#2C2C2C] flex flex-col relative shadow-inner border border-white/5 ml-4"
+      className="w-6 rounded-md overflow-hidden bg-[#2C2C2C] flex flex-col relative shadow-inner border border-white/5"
       style={{ height: boardHeight }}
     >
       {/* Black section (top) */}

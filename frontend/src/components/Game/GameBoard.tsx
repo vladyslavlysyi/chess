@@ -114,16 +114,24 @@ export function GameBoard({ onLeave }: GameBoardProps) {
   const myDelta = myColor === 'white' ? whiteEloDelta : blackEloDelta;
 
   // Responsive board sizing
-  // On mobile: fill screen width (minus small padding)
-  // On desktop: cap at 580px
+  // EvalBar is 24px wide (w-6) + 12px gap (gap-3) = 36px
+  const evalBarWidth = 36;
+  const mobilePadding = 24;
+
   const [boardWidth, setBoardWidth] = React.useState(() => {
     const isMobile = window.innerWidth < 768;
-    return isMobile ? window.innerWidth - 24 : Math.min(580, window.innerWidth - 340);
+    return isMobile 
+      ? window.innerWidth - mobilePadding - evalBarWidth 
+      : Math.min(580, window.innerWidth - 340);
   });
   React.useEffect(() => {
     const handleResize = () => {
       const isMobile = window.innerWidth < 768;
-      setBoardWidth(isMobile ? window.innerWidth - 24 : Math.min(580, window.innerWidth - 340));
+      setBoardWidth(
+        isMobile 
+          ? window.innerWidth - mobilePadding - evalBarWidth 
+          : Math.min(580, window.innerWidth - 340)
+      );
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -158,23 +166,21 @@ export function GameBoard({ onLeave }: GameBoardProps) {
             elo={opponentElo}
             time={opponentTime}
             isActive={opponentActive}
-            boardWidth={boardWidth}
+            boardWidth={boardWidth + evalBarWidth}
           />
 
           {/* Middle: EvalBar + Chessboard */}
-          <div className="flex">
-            {/* Engine Eval Bar — hidden on small mobile to save space */}
-            <div className="hidden sm:block">
-              <EvalBar
-                evaluation={evaluation}
-                turn={turn}
-                boardHeight={boardWidth}
-              />
-            </div>
+          <div className="flex gap-3">
+            {/* Engine Eval Bar — always visible now */}
+            <EvalBar
+              evaluation={evaluation}
+              turn={turn}
+              boardHeight={boardWidth}
+            />
 
             {/* Chessboard */}
             <div
-              className="relative rounded-xl overflow-hidden ml-4"
+              className="relative rounded-xl overflow-hidden"
               style={{
                 width: boardWidth,
                 height: boardWidth,
@@ -256,7 +262,7 @@ export function GameBoard({ onLeave }: GameBoardProps) {
             elo={myElo}
             time={myTime}
             isActive={myActive}
-            boardWidth={boardWidth}
+            boardWidth={boardWidth + evalBarWidth}
           />
         </div>
 
