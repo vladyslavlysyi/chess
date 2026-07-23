@@ -9,6 +9,7 @@ import { MoveList } from './MoveList';
 import { Chat } from './Chat';
 import { EvalBar } from './EvalBar';
 import { Engine } from '../../lib/stockfish';
+import { analyzeGame } from '../../lib/analyzer';
 
 /** Which stored ELO applies to a given time control. */
 function ratingClass(tc: string): 'elo_bullet' | 'elo_blitz' | 'elo_rapid' {
@@ -42,13 +43,16 @@ const REASON_LABELS: Record<string, string> = {
 };
 
 export function GameBoard({ onLeave }: GameBoardProps) {
+  const [showOverlay, setShowOverlay] = React.useState(true);
+
   const {
     fen, myColor, opponentName, opponentElo, whiteTime, blackTime,
     turn, phase, result, reason, drawOffered, opponentDisconnected,
     opponentGraceSeconds, myDisplayName, lastMoveUci, isCheck, timeControl,
-    whiteEloDelta, blackEloDelta, moves, selectedPly, selectPly,
+    whiteEloDelta, blackEloDelta, moves, selectedPly, selectPly, pgn,
     sendMove, sendResign, sendDrawOffer, sendDrawResponse,
     evaluation, setEvaluation, bestMove,
+    setAnalysis, setAnalysisProgress, analysisProgress
   } = useGameStore();
   const { user } = useAuthStore();
 
@@ -180,7 +184,7 @@ export function GameBoard({ onLeave }: GameBoardProps) {
               />
 
             {/* Game-over overlay */}
-            {phase === 'over' && (
+            {phase === 'over' && showOverlay && (
               <div
                 className="absolute inset-0 z-50 backdrop-blur-sm flex items-center justify-center"
                 style={{ background: 'rgba(2,6,23,0.75)' }}
@@ -204,13 +208,31 @@ export function GameBoard({ onLeave }: GameBoardProps) {
                       {myDelta >= 0 ? '+' : ''}{myDelta} ELO
                     </div>
                   )}
-                  <button
-                    id="game-over-back-btn"
-                    onClick={onLeave}
-                    className="mt-6 px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 mx-auto text-white bg-[#16A34A] hover:bg-[#15803D] shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] hover:shadow-[0_6px_20px_rgba(22,163,74,0.23)] hover:-translate-y-1"
-                  >
-                    <Home size={20} /> Back to Lobby
-                  </button>
+                  <div className="flex gap-4 mt-6 justify-center">
+                    <button
+                      id="game-over-back-btn"
+                      onClick={onLeave}
+                      className="px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 text-white bg-slate-700 hover:bg-slate-600 shadow-md hover:-translate-y-1"
+                    >
+                      <Home size={20} /> Lobby
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setShowOverlay(false);
+                        if (pgn) {
+                          setAnalysisProgress(1); // Show progress bar
+                          const result = await analyzeGame(pgn, (p) => setAnalysisProgress(p));
+                          setAnalysis(result);
+                          setAnalysisProgress(100);
+                          setTimeout(() => setAnalysisProgress(0), 1000);
+                        }
+                      }}
+                      disabled={analysisProgress > 0}
+                      className="px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 text-white bg-[#16A34A] hover:bg-[#15803D] shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] hover:shadow-[0_6px_20px_rgba(22,163,74,0.23)] hover:-translate-y-1 disabled:opacity-50 disabled:hover:translate-y-0"
+                    >
+                      Analyze Game
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

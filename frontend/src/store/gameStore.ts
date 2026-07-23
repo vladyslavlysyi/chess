@@ -68,6 +68,12 @@ interface GameState {
   bestMove: string | null;
   setEvaluation: (evalValue: number | null, bestMove?: string | null) => void;
 
+  // Analysis
+  analysis: any | null; // using any to avoid circular dependency or complex imports, or we can import it
+  analysisProgress: number;
+  setAnalysis: (analysis: any | null) => void;
+  setAnalysisProgress: (progress: number) => void;
+
   // Actions
   setLobbySocket: (ws: WebSocket | null) => void;
   setSocket: (ws: WebSocket | null) => void;
@@ -141,10 +147,14 @@ export const useGameStore = create<GameState>((set, get) => ({
   chatMessages: [],
   evaluation: null,
   bestMove: null,
+  analysis: null,
+  analysisProgress: 0,
 
   setLobbySocket: (ws) => set({ lobbySocket: ws }),
   setSocket: (ws) => set({ socket: ws }),
   setEvaluation: (v, bestMove = null) => set({ evaluation: v, bestMove }),
+  setAnalysis: (analysis) => set({ analysis }),
+  setAnalysisProgress: (analysisProgress) => set({ analysisProgress }),
   setSeat: (gameId, seatToken, token) => set({ gameId, seatToken, token }),
   setPrivateRoomCode: (code) => set({ privateRoomCode: code, phase: code ? 'lobby' : get().phase }),
 
