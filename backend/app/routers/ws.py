@@ -82,13 +82,16 @@ async def websocket_game(
 
     # Decide start vs reconnect vs finished-view.
     if session.is_over:
-        # Late viewer of a finished game — send the final board snapshot.
+        # Late viewer of a finished game — send the final game over state.
         white_t, black_t = session._snapshot()
-        await manager.send_json(ws, msg_game_update(
-            fen=session.board.fen(),
-            last_move_uci=session.board.peek().uci() if session.board.move_stack else "",
-            white_time=white_t, black_time=black_t,
-            turn=session.current_color, check=session.board.is_check(),
+        await manager.send_json(ws, proto.msg_game_over(
+            result=session.result,
+            reason=session.reason,
+            white_time=white_t,
+            black_time=black_t,
+            pgn=session.pgn_str,
+            white_delta=session.white_delta,
+            black_delta=session.black_delta,
         ))
     elif session.started:
         await session.handle_reconnect(ws, color)

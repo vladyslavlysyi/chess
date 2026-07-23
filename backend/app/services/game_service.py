@@ -339,6 +339,8 @@ class GameSession:
         if self.is_over:
             return
         self.is_over = True
+        self.result = result
+        self.reason = reason
         self._stop_clock()
 
         # Cancel any pending reconnect grace timers so they can't fire later.
@@ -360,10 +362,15 @@ class GameSession:
         white_delta, black_delta = 0, 0
         try:
             white_delta, black_delta = await self._persist_result(result, pgn_str)
-        except Exception:
-            logger.exception(f"Failed to persist result for game {self.game_id}")
+        except Exception as e:
+            # We don't want DB/RPC errors to crash the game session / WebSocket loop.
+            print(f"Failed to persist game {self.game_id}: {e}")
 
-        white_t, black_t = self.white_time, self.black_time
+        self.pgn_str = pgn_str
+        self.white_delta = white_delta
+        self.black_delta = black_delta
+
+        white_t, black_t = self._snapshot()
         await manager.send_to_all_in_room(
             self.game_id,
             proto.msg_game_over(

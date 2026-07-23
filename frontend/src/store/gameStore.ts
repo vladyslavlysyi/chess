@@ -216,11 +216,38 @@ export const useGameStore = create<GameState>((set, get) => ({
   endGame: (result, reason, wt, bt, pgn, wDelta, bDelta) => {
     const existing = get()._clockInterval;
     if (existing) clearInterval(existing);
-    set({
+    
+    // If we receive a PGN (e.g. from a late reconnect to a finished game)
+    // we should parse it to ensure the board and moves list are populated.
+    const updates: any = {
       phase: 'over', result, reason, whiteTime: wt, blackTime: bt,
       pgn, whiteEloDelta: wDelta, blackEloDelta: bDelta,
       opponentDisconnected: false, _clockInterval: null,
-    });
+    };
+    
+    if (pgn) {
+      try {
+        const chess = new Chess();
+        chess.loadPgn(pgn, { strict: false });
+        updates.game = chess;
+        updates.fen = chess.fen();
+        
+        const moves: MoveRecord[] = [];
+        const history = chess.history({ verbose: true });
+        history.forEach((m) => {
+          moves.push({
+            san: m.san,
+            uci: m.from + m.to + (m.promotion || ''),
+            fen: m.after,
+          });
+        });
+        updates.moves = moves;
+      } catch (e) {
+        console.error("Failed to parse PGN in endGame", e);
+      }
+    }
+    
+    set(updates);
   },
 
   setQueued: (position) => set({ phase: 'queued', queuePosition: position }),
@@ -263,15 +290,20 @@ export const useGameStore = create<GameState>((set, get) => ({
     const chess = new Chess();
     const moves: MoveRecord[] = [];
     if (gameDetail.pgn) {
-      chess.loadPgn(gameDetail.pgn);
-      const history = chess.history({ verbose: true });
-      history.forEach((m) => {
-        moves.push({
-          san: m.san,
-          uci: m.from + m.to + (m.promotion || ''),
-          fen: m.after,
+      try {
+        // use strict: false just in case
+        chess.loadPgn(gameDetail.pgn, { strict: false });
+        const history = chess.history({ verbose: true });
+        history.forEach((m) => {
+          moves.push({
+            san: m.san,
+            uci: m.from + m.to + (m.promotion || ''),
+            fen: m.after,
+          });
         });
-      });
+      } catch (e) {
+        console.error("Failed to load PGN for replay:", e);
+      }
     }
 
     set({

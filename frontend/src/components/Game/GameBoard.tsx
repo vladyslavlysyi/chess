@@ -43,8 +43,6 @@ const REASON_LABELS: Record<string, string> = {
 };
 
 export function GameBoard({ onLeave }: GameBoardProps) {
-  const [showOverlay, setShowOverlay] = React.useState(true);
-
   const {
     fen, myColor, opponentName, opponentElo, whiteTime, blackTime,
     turn, phase, result, reason, drawOffered, opponentDisconnected,
@@ -199,63 +197,9 @@ export function GameBoard({ onLeave }: GameBoardProps) {
                 bestMove={(reviewing || phase === 'over') ? bestMove : null}
               />
 
-            {/* Game-over overlay */}
-            {phase === 'over' && showOverlay && (
-              <div
-                className="absolute inset-0 z-50 backdrop-blur-sm flex items-center justify-center"
-                style={{ background: 'rgba(2,6,23,0.75)' }}
-              >
-                <div
-                  className="border rounded-2xl p-8 text-center mx-4"
-                  style={{
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border-hover)',
-                    boxShadow: 'var(--shadow-md)',
-                  }}
-                >
-                  <div className="text-4xl mb-2 font-bold">
-                    {result ? RESULT_LABELS[result] : '—'}
-                  </div>
-                  <p className="mb-2" style={{ color: 'var(--color-muted)' }}>
-                    {reason ? REASON_LABELS[reason] : ''}
-                  </p>
-                  {myColor && (
-                    <div className={`text-lg font-bold mt-2 ${myDelta >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                      {myDelta >= 0 ? '+' : ''}{myDelta} ELO
-                    </div>
-                  )}
-                  <div className="flex flex-col gap-3 mt-6">
-                    <button
-                      onClick={async () => {
-                        setShowOverlay(false);
-                        if (pgn) {
-                          setAnalysisProgress(1);
-                          const analysisResult = await analyzeGame(pgn, (p) => setAnalysisProgress(p));
-                          setAnalysis(analysisResult);
-                          setAnalysisProgress(100);
-                          setTimeout(() => setAnalysisProgress(0), 1000);
-                        }
-                      }}
-                      disabled={analysisProgress > 0}
-                      className="w-full px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-white bg-[#16A34A] hover:bg-[#15803D] shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] hover:-translate-y-1 disabled:opacity-50"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-                      Analyze Game
-                    </button>
-                    <button
-                      id="game-over-back-btn"
-                      onClick={onLeave}
-                      className="w-full px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-white bg-slate-700 hover:bg-slate-600 shadow-md hover:-translate-y-1"
-                    >
-                      <Home size={20} /> Back to Lobby
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Overlay removed as requested by user */}
             </div>
           </div>
-
           {/* My bar (bottom) */}
           <PlayerBar
             name={myDisplayName || user?.username || 'You'}
@@ -436,13 +380,36 @@ export function GameBoard({ onLeave }: GameBoardProps) {
             </div>
           )}
           {(phase === 'over' || phase === 'review') && (
-            <button
-              id="lobby-return-btn"
-              onClick={onLeave}
-              className="w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 mt-2 text-white bg-[#16A34A] hover:bg-[#15803D] shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] hover:shadow-[0_6px_20px_rgba(22,163,74,0.23)] hover:-translate-y-[2px]"
-            >
-              <Home size={20} aria-hidden="true" /> Back to Lobby
-            </button>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={async () => {
+                  if (pgn) {
+                    setAnalysisProgress(1);
+                    try {
+                      const analysisResult = await analyzeGame(pgn, (p) => setAnalysisProgress(p));
+                      setAnalysis(analysisResult);
+                    } catch (e) {
+                      console.error('Analysis failed', e);
+                    } finally {
+                      setAnalysisProgress(100);
+                      setTimeout(() => setAnalysisProgress(0), 1000);
+                    }
+                  }
+                }}
+                disabled={analysisProgress > 0}
+                className="w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-white bg-[#16A34A] hover:bg-[#15803D] shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] disabled:opacity-50 text-sm"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+                Analyze Game
+              </button>
+              <button
+                id="lobby-return-btn"
+                onClick={onLeave}
+                className="w-full py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm text-white bg-slate-700 hover:bg-slate-600 shadow-md"
+              >
+                <Home size={16} /> Back to Lobby
+              </button>
+            </div>
           )}
 
           {/* In-game chat */}

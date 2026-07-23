@@ -22,7 +22,7 @@ function cpToWinProb(cp: number): number {
 
 export async function analyzeGame(pgn: string, onProgress: (progress: number) => void): Promise<GameAnalysis> {
   const game = new Chess();
-  game.loadPgn(pgn);
+  try { game.loadPgn(pgn, { strict: false }); } catch(e) { console.error("Error loading PGN for analysis", e); }
   
   const history = game.history({ verbose: true });
   const fens: string[] = [new Chess().fen()]; // initial position
