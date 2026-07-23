@@ -4,6 +4,7 @@ export class Engine {
   private worker: Worker;
   private resolveBestMove: ((move: string) => void) | null = null;
   private onEvalUpdate: ((evaluation: number) => void) | null = null;
+  private isBlackToMove: boolean = false;
   
   constructor() {
     this.worker = new Worker('/stockfish.js');
@@ -22,13 +23,11 @@ export class Engine {
       if (this.onEvalUpdate) {
         if (mateMatch) {
           const mate = parseInt(mateMatch[1], 10);
-          // Positive mate means white is mating, negative means black is mating
-          // But it's usually from the perspective of the side to move.
-          // For simplicity, we just pass large numbers.
-          this.onEvalUpdate(mate > 0 ? 10000 : -10000);
+          const score = mate > 0 ? 10000 : -10000;
+          this.onEvalUpdate(this.isBlackToMove ? -score : score);
         } else if (scoreMatch) {
           const cp = parseInt(scoreMatch[1], 10);
-          this.onEvalUpdate(cp);
+          this.onEvalUpdate(this.isBlackToMove ? -cp : cp);
         }
       }
     }
@@ -49,6 +48,7 @@ export class Engine {
 
   async evaluatePosition(fen: string, depth: number = 15): Promise<string> {
     return new Promise((resolve) => {
+      this.isBlackToMove = fen.includes(' b ');
       this.resolveBestMove = resolve;
       this.worker.postMessage(`position fen ${fen}`);
       this.worker.postMessage(`go depth ${depth}`);

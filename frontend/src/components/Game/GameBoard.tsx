@@ -80,6 +80,7 @@ export function GameBoard({ onLeave }: GameBoardProps) {
   React.useEffect(() => {
     if (engineRef.current && shownFen) {
       engineRef.current.evaluatePosition(shownFen, 12).then((bestMove) => {
+        // Only update bestMove, preserve the live evaluation from the store
         setEvaluation(useGameStore.getState().evaluation, bestMove);
       });
     }
