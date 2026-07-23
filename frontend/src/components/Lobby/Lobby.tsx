@@ -135,18 +135,18 @@ export function Lobby({ onAuthRequest, onProfileRequest, onLeaderboardRequest }:
       </div>
 
       {/* Header */}
-      <header className="p-6 border-b border-white/5 flex justify-between items-center bg-[#0E1223]/80 backdrop-blur-xl relative z-10">
-        <div className="flex items-center gap-3">
+      <header className="px-4 py-4 md:p-6 border-b border-white/5 flex justify-between items-center bg-[#0E1223]/80 backdrop-blur-xl relative z-10">
+        <div className="flex items-center gap-2 md:gap-3">
           <div className="bg-green-500/20 p-2 rounded-xl">
-            <Swords className="text-green-400" size={24} />
+            <Swords className="text-green-400" size={22} />
           </div>
-          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 tracking-tight">
+          <h1 className="text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 tracking-tight">
             NexusChess
           </h1>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
           {isAuthenticated && user ? (
-            <div className="flex items-center gap-5">
+            <div className="flex items-center gap-2 md:gap-5">
               <button
                 onClick={onLeaderboardRequest}
                 className="text-slate-400 hover:text-amber-400 transition-colors p-2 rounded-xl hover:bg-slate-800/50"
@@ -160,7 +160,7 @@ export function Lobby({ onAuthRequest, onProfileRequest, onLeaderboardRequest }:
                 className="flex flex-col items-end hover:opacity-80 transition-opacity"
                 title="View profile"
               >
-                <p className="text-base font-bold text-slate-100 leading-tight">{user.username}</p>
+                <p className="text-sm md:text-base font-bold text-slate-100 leading-tight">{user.username}</p>
                 <p className="text-xs text-slate-400 font-medium flex items-center gap-1 mt-0.5">
                   <Zap size={12} className="text-amber-400 fill-amber-400" />
                   {user.elo_rapid} Rapid
@@ -169,7 +169,7 @@ export function Lobby({ onAuthRequest, onProfileRequest, onLeaderboardRequest }:
               <div className="w-px h-8 bg-slate-700/50 hidden sm:block"></div>
               <button
                 onClick={logout}
-                className="text-sm font-medium text-slate-300 hover:text-white bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 hover:border-slate-600 px-4 py-2 rounded-xl transition-all shadow-sm"
+                className="text-xs md:text-sm font-medium text-slate-300 hover:text-white bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 hover:border-slate-600 px-3 md:px-4 py-2 rounded-xl transition-all shadow-sm"
               >
                 Sign out
               </button>

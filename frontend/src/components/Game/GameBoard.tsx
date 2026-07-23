@@ -113,10 +113,18 @@ export function GameBoard({ onLeave }: GameBoardProps) {
   const myElo = user ? (user[myEloField] ?? 1200) : 1200;
   const myDelta = myColor === 'white' ? whiteEloDelta : blackEloDelta;
 
-  // Responsive board sizing: fill available space up to 580px
-  const [boardWidth, setBoardWidth] = React.useState(() => Math.min(580, window.innerWidth - 32));
+  // Responsive board sizing
+  // On mobile: fill screen width (minus small padding)
+  // On desktop: cap at 580px
+  const [boardWidth, setBoardWidth] = React.useState(() => {
+    const isMobile = window.innerWidth < 768;
+    return isMobile ? window.innerWidth - 24 : Math.min(580, window.innerWidth - 340);
+  });
   React.useEffect(() => {
-    const handleResize = () => setBoardWidth(Math.min(580, window.innerWidth - 32));
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768;
+      setBoardWidth(isMobile ? window.innerWidth - 24 : Math.min(580, window.innerWidth - 340));
+    };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -139,11 +147,11 @@ export function GameBoard({ onLeave }: GameBoardProps) {
              style={{ background: 'rgba(148,163,184,0.04)' }} />
       </div>
 
-      {/* ── Chess.com style layout: board left, panel right ── */}
-      <div className="relative z-10 w-full max-w-5xl flex flex-col lg:flex-row gap-4 items-start justify-center">
+      {/* ── Chess.com style layout: board top on mobile, side-by-side on desktop ── */}
+      <div className="relative z-10 w-full max-w-5xl flex flex-col md:flex-row gap-4 items-start justify-center">
 
         {/* ── Left column: opponent bar + board + my bar ── */}
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex flex-col items-center gap-2 w-full md:w-auto">
           {/* Opponent bar (top) */}
           <PlayerBar
             name={opponentName}
@@ -208,29 +216,30 @@ export function GameBoard({ onLeave }: GameBoardProps) {
                       {myDelta >= 0 ? '+' : ''}{myDelta} ELO
                     </div>
                   )}
-                  <div className="flex gap-4 mt-6 justify-center">
-                    <button
-                      id="game-over-back-btn"
-                      onClick={onLeave}
-                      className="px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 text-white bg-slate-700 hover:bg-slate-600 shadow-md hover:-translate-y-1"
-                    >
-                      <Home size={20} /> Lobby
-                    </button>
+                  <div className="flex flex-col gap-3 mt-6">
                     <button
                       onClick={async () => {
                         setShowOverlay(false);
                         if (pgn) {
-                          setAnalysisProgress(1); // Show progress bar
-                          const result = await analyzeGame(pgn, (p) => setAnalysisProgress(p));
-                          setAnalysis(result);
+                          setAnalysisProgress(1);
+                          const analysisResult = await analyzeGame(pgn, (p) => setAnalysisProgress(p));
+                          setAnalysis(analysisResult);
                           setAnalysisProgress(100);
                           setTimeout(() => setAnalysisProgress(0), 1000);
                         }
                       }}
                       disabled={analysisProgress > 0}
-                      className="px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 text-white bg-[#16A34A] hover:bg-[#15803D] shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] hover:shadow-[0_6px_20px_rgba(22,163,74,0.23)] hover:-translate-y-1 disabled:opacity-50 disabled:hover:translate-y-0"
+                      className="w-full px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-white bg-[#16A34A] hover:bg-[#15803D] shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] hover:-translate-y-1 disabled:opacity-50"
                     >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
                       Analyze Game
+                    </button>
+                    <button
+                      id="game-over-back-btn"
+                      onClick={onLeave}
+                      className="w-full px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-white bg-slate-700 hover:bg-slate-600 shadow-md hover:-translate-y-1"
+                    >
+                      <Home size={20} /> Back to Lobby
                     </button>
                   </div>
                 </div>
@@ -251,7 +260,7 @@ export function GameBoard({ onLeave }: GameBoardProps) {
 
         {/* ── Right panel: alerts + move list + controls ── */}
         <div
-          className="w-full flex flex-col gap-3"
+          className="w-full md:w-auto flex flex-col gap-3"
           style={{ minWidth: '220px', maxWidth: '280px', alignSelf: 'stretch' }}
         >
           {/* Opponent disconnected warning */}
